@@ -759,4 +759,4 @@ jint JNI_CreateJavaVM(JavaVM** p_vm, JNIEnv** p_env, void* vm_args) {
 
 gDvm是一个类型为DvmGlobals的全局变量，用来收集当前进程所有虚拟机相关的信息:
 
-https://github.com/leeminghao/about-android/Globals.h
+https://github.com/leeminghao/about-android/dalvik/Globals.h
