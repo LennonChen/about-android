@@ -773,7 +773,7 @@ jint JNI_CreateJavaVM(JavaVM** p_vm, JNIEnv** p_env, void* vm_args) {
 gDvm是一个类型为DvmGlobals的全局变量，用来收集当前进程所有虚拟机相关的信息,
 gDvmJni是一个类型为DvmJniGlobals的全局变量，用来收集当前进程Jni环境的信息:
 
-https://github.com/leeminghao/about-android/Globals.h
+https://github.com/leeminghao/about-android/blob/master/dalvik/Globals.h
 
 每一个Dalvik虚拟机实例都有一个函数表，保存在对应的JavaVMExt对象的成员变量funcTable中,
 JavaVMExt的类型定义如下所示:
