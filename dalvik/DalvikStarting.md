@@ -242,7 +242,23 @@ path: frameworks/base/core/jni/AndroidRuntime.cpp
 int AndroidRuntime::startVm(JavaVM** pJavaVM, JNIEnv** pEnv)
 {
     int result = -1;
+    /* path: libnativehelper/include/nativehelper/jni.h
+     * typedef struct JavaVMInitArgs {
+     *     jint        version;    /* use JNI_VERSION_1_2 or later */
+
+     *     jint        nOptions;
+     *     JavaVMOption* options;
+     *     jboolean    ignoreUnrecognized;
+     * } JavaVMInitArgs;
+     */
     JavaVMInitArgs initArgs;
+    /* path: libnativehelper/include/nativehelper/jni.h
+     * typedef struct JavaVMOption {
+           const char* optionString;
+           void*       extraInfo;
+       } JavaVMOption;
+     * Vector<JavaVMOption> mOptions;
+     */
     JavaVMOption opt;
     char propBuf[PROPERTY_VALUE_MAX];
     char stackTraceFileBuf[PROPERTY_VALUE_MAX];
@@ -323,11 +339,6 @@ int AndroidRuntime::startVm(JavaVM** pJavaVM, JNIEnv** pEnv)
     strcpy(jniOptsBuf, "-Xjniopts:");
     property_get("dalvik.vm.jniopts", jniOptsBuf+10, "");
 
-    /* typedef struct JavaVMOption {
-           const char* optionString;
-           void*       extraInfo;
-       } JavaVMOption;
-    */
     /* route exit() to our handler */
     opt.extraInfo = (void*) runtime_exit;
     opt.optionString = "exit";
@@ -618,7 +629,7 @@ bail:
 }
 ```
 
-### JNI_CreateJavaVM
+### 3.JNI_CreateJavaVM
 
 path: dalvik/vm/Jni.cpp
 ```
@@ -726,7 +737,9 @@ jint JNI_CreateJavaVM(JavaVM** p_vm, JNIEnv** p_env, void* vm_args) {
      * here because some of the class initialization we do when starting
      * up the VM will call into native code.
      */
-    /* 3.为当前线程创建和初始化一个JNI环境，即一个JNIEnvExt对象，这是通过调用函数dvmCreateJNIEnv来完成的。*/
+    /* 3.为当前进程创建和初始化一个JNI环境，即一个JNIEnvExt对象，这是通过调用函数
+     * dvmCreateJNIEnv来完成的。
+     */
     JNIEnvExt* pEnv = (JNIEnvExt*) dvmCreateJNIEnv(NULL);
 
     /* Initialize VM. */
@@ -757,6 +770,153 @@ jint JNI_CreateJavaVM(JavaVM** p_vm, JNIEnv** p_env, void* vm_args) {
 }
 ```
 
-gDvm是一个类型为DvmGlobals的全局变量，用来收集当前进程所有虚拟机相关的信息:
+gDvm是一个类型为DvmGlobals的全局变量，用来收集当前进程所有虚拟机相关的信息,
+gDvmJni是一个类型为DvmJniGlobals的全局变量，用来收集当前进程Jni环境的信息:
 
 https://github.com/leeminghao/about-android/Globals.h
+
+每一个Dalvik虚拟机实例都有一个函数表，保存在对应的JavaVMExt对象的成员变量funcTable中,
+JavaVMExt的类型定义如下所示:
+
+path: dalvik/vm/JniInternal.h
+```
+struct JavaVMExt {
+    const struct JNIInvokeInterface* funcTable;     /* must be first */
+
+    const struct JNIInvokeInterface* baseFuncTable;
+
+    /* head of list of JNIEnvs associated with this VM */
+    JNIEnvExt*      envList;
+    pthread_mutex_t envListLock;
+};
+```
+
+##### funTable
+
+这个函数表又被指定为gInvokeInterface。gInvokeInterface是一个类型为JNIInvokeInterface
+的结构体，类型定义如下所示:
+
+path: libnativehelper/include/nativehelper/jni.h
+```
+/*
+ * JNI invocation interface.
+ */
+struct JNIInvokeInterface {
+    void*       reserved0;
+    void*       reserved1;
+    void*       reserved2;
+
+    jint        (*DestroyJavaVM)(JavaVM*);
+    jint        (*AttachCurrentThread)(JavaVM*, JNIEnv**, void*);
+    jint        (*DetachCurrentThread)(JavaVM*);
+    jint        (*GetEnv)(JavaVM*, void**, jint);
+    jint        (*AttachCurrentThreadAsDaemon)(JavaVM*, JNIEnv**, void*);
+};
+```
+
+而gInvokeInterface的定义如下所示：
+
+path: dalvik/vm/Jni.cpp
+```
+static const struct JNIInvokeInterface gInvokeInterface = {
+    NULL,
+    NULL,
+    NULL,
+
+    DestroyJavaVM,
+    AttachCurrentThread,
+    DetachCurrentThread,
+
+    GetEnv,
+
+    AttachCurrentThreadAsDaemon,
+};
+```
+
+有了这个Dalvik虚拟机函数表之后，我们就可以将当前线程Attach或者Detach到Dalvik虚拟机中去，
+或者销毁当前进程的Dalvik虚拟机等。
+
+##### envList
+
+每一个Dalvik虚拟机实例还有一个JNI环境列表，保存在对应的JavaVMExt对象的成员变量envList中。
+注意，JavaVMExt对象的成员变量envList描述的是一个JNIEnvExt列表，其中，每一个Attach到Dalvik
+虚拟机中去的线程都有一个对应的JNIEnvExt，用来描述它的JNI环境。有了这个JNI环境之后，我们才可以
+在Java函数和C/C++函数之间互相调用。
+
+path: dalvik/vm/JniInternal.h
+```
+struct JNIEnvExt {
+    const struct JNINativeInterface* funcTable;     /* must be first */
+
+    const struct JNINativeInterface* baseFuncTable;
+
+    u4      envThreadId;
+    Thread* self;
+
+    /* if nonzero, we are in a "critical" JNI call */
+    int     critical;
+
+    struct JNIEnvExt* prev;
+    struct JNIEnvExt* next;
+};
+```
+
+每一个JNIEnvExt对象都有两个成员变量prev和next，它们均是一个JNIEnvExt指针，分别指向前一个
+JNIEnvExt对象和后一个JNIEnvExt对象，也就是说，每一个Dalvik虚拟机实例的成员变量envList
+描述的是一个双向JNIEnvExt列表，其中，列表中的第一个JNIEnvExt对象描述的是主线程的JNI环境。
+
+### 4.dvmCreateJNIEnv
+
+path: dalvik/vm/Jni.cpp
+```
+/*
+ * Create a new JNIEnv struct and add it to the VM's list.
+ *
+ * "self" will be NULL for the main thread, since the VM hasn't started
+ * yet; the value will be filled in later.
+ */
+JNIEnv* dvmCreateJNIEnv(Thread* self) {
+    JavaVMExt* vm = (JavaVMExt*) gDvmJni.jniVm;
+
+    //if (self != NULL)
+    //    ALOGI("Ent CreateJNIEnv: threadid=%d %p", self->threadId, self);
+
+    assert(vm != NULL);
+
+    /* 1.创建一个JNIEnvExt对象，用来描述一个JNI环境，并且设置这个JNIEnvExt对象的宿主Dalvik虚拟机，
+     * 以及所使用的本地接口表，即设置这个JNIEnvExt对象的成员变量funcTable和vm。这里的宿主Dalvik
+     * 虚拟机即为当前进程的Dalvik虚拟机，它保存在全局变量gDvm的成员变量vmList中。本地接口表由
+     * 全局变量gNativeInterface来描述。
+     */
+    JNIEnvExt* newEnv = (JNIEnvExt*) calloc(1, sizeof(JNIEnvExt));
+    newEnv->funcTable = &gNativeInterface;
+    if (self != NULL) {
+        dvmSetJniEnvThreadId((JNIEnv*) newEnv, self);
+        assert(newEnv->envThreadId != 0);
+    } else {
+        /* make it obvious if we fail to initialize these later */
+        newEnv->envThreadId = 0x77777775;
+        newEnv->self = (Thread*) 0x77777779;
+    }
+    if (gDvmJni.useCheckJni) {
+        dvmUseCheckedJniEnv(newEnv);
+    }
+
+    ScopedPthreadMutexLock lock(&vm->envListLock);
+
+    /* insert at head of list */
+    newEnv->next = vm->envList;
+    assert(newEnv->prev == NULL);
+    if (vm->envList == NULL) {
+        // rare, but possible
+        vm->envList = newEnv;
+    } else {
+        vm->envList->prev = newEnv;
+    }
+    vm->envList = newEnv;
+
+    //if (self != NULL)
+    //    ALOGI("Xit CreateJNIEnv: threadid=%d %p", self->threadId, self);
+    return (JNIEnv*) newEnv;
+}
+```
