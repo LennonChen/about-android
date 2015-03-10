@@ -138,7 +138,7 @@ std::string dvmStartup(int argc, const char* const argv[],
     }
 
     /*
-     * At this point, the system is guaranteed to be sufficiently
+     * 10.At this point, the system is guaranteed to be sufficiently
      * initialized that we can look up classes and class members. This
      * call populates the gDvm instance with all the class and member
      * references that the VM wants to use directly.
@@ -147,15 +147,50 @@ std::string dvmStartup(int argc, const char* const argv[],
         return "dvmFindRequiredClassesAndMembers failed";
     }
 
+    /* 11.这个函数定义在文件dalvik/vm/Intern.c中，用来初始化java.lang.String类内部私有一个字符串池，
+     * 这样当Dalvik虚拟机运行起来之后，我们就可以调用java.lang.String类的成员函数intern来访问这个
+     * 字符串池里面的字符串。
+     */
     if (!dvmStringInternStartup()) {
         return "dvmStringInternStartup failed";
     }
+    /* 12.这个函数定义在文件dalvik/vm/Native.c中，用来初始化Native Shared Object库加载表，
+     * 也就是SO库加载表。这个加载表是用来描述当前进程有哪些SO文件已经被加载过了。
+     */
     if (!dvmNativeStartup()) {
         return "dvmNativeStartup failed";
     }
+    /* 13.这个函数定义在文件dalvik/vm/native/InternalNative.c中，用来初始化一个内部Native函数表。
+     * 所有需要直接访问Dalvik虚拟机内部函数或者数据结构的Native函数都定义在这张表中，因为它们如果
+     * 定义在外部的其它SO文件中，就无法直接访问Dalvik虚拟机的内部函数或者数据结构。例如，前面提到
+     * 的java.lang.String类的成员函数intent，由于它要访问Dalvik虚拟机内部的一个私有字符串池，因此，
+     * 它所对应的Native函数就要在Dalvik虚拟机内部实现。
+     */
     if (!dvmInternalNativeStartup()) {
         return "dvmInternalNativeStartup failed";
     }
+    /* 14.这个函数定义在文件dalvik/vm/Jni.c中，用来初始化全局引用表，以及加载一些与Direct Buffer
+     * 相关的类，如DirectBuffer、PhantomReference和ReferenceQueue等。
+     * 我们在一个JNI方法中，可能会需要访问一些Java对象，这样就需要通知GC，这些Java对象现在正在被
+     * Native Code引用，不能回收。这些被Native Code引用的Java对象就会被记录在一个全局引用表中，
+     * 具体的做法就是调用JNI环境对象(JNIEnv)的成员函数NewLocalRef/DeleteLocalRef和
+     * NewGlobalRef/DeleteGlobalRef等来显式地引用或者释放Java对象。
+     * 有时候我们需要在Java代码中，直接在Native层分配内存，也就直接使用malloc来分配内存。
+     * 这些Native内存不同于在Java堆中分配的内存，区别在于前者需要不接受GC管理，而后者接受GC管理。
+     * 这些直接在Native层分配的内存有什么用呢？考虑一个场景，我们需要在Java代码中从一个IO设备中
+     * 读取数据。从IO设备读取数据意味着要调用由本地操作系统提供的read接口来实现。这样我们就有两种
+     * 做法。第一种做法在Native层临时分配一个缓冲区，用来保存从IO设备read回来的数据，然后再将这个
+     * 数据拷贝到Java层中去，也就是拷贝到Java堆去使用。第二种做法是在Java层创建一个对象，这个对象
+     * 在Native层直接关联有一块内存，从IO设备read回来的数据就直接保存这块内存中。第二种方法和
+     * 第一种方法相比，减少了一次内存拷贝，因而可以提高性能。
+     * 我们将这种能够直接在Native层中分配内存的Java对象就称为DirectBuffer。由于DirectBuffer使用的
+     * 内存是不接受GC管理的，因此，我们就需要通过其它的方式来管理它们。具体做法就是为每一个
+     * DirectBuffer对象创建一个PhantomReference引用。注意，DirectBuffer对象本身是一个Java对象，
+     * 它是接受GC管理的。当GC准备回收一个DirectBuffer对象时，如果发现它还有PhantomReference引用，
+     * 那就会在回收它之前，把相应的PhantomReference引用加入到与之关联的一个ReferenceQueue队列中去。
+     * 这样我们就可以通过判断一个DirectBuffer对象的PhantomReference引用是否已经加入到一个相关的
+     * ReferenceQueue队列中。如果已经加入了的话，那么就可以在该DirectBuffer对象被回收之前，
+     * 释放掉之前为它在Native层分配的内存。*/
     if (!dvmJniStartup()) {
         return "dvmJniStartup failed";
     }
