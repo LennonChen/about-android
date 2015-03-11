@@ -245,3 +245,120 @@ https://github.com/leeminghao/about-android/blob/master/dalvik/start/gNativeInte
 ### 5.dvmStartup
 
 https://github.com/leeminghao/about-android/blob/master/dalvik/start/dvmStartup.md
+
+### 6.AndroidRuntime::startReg
+
+path: frameworks/base/core/jni/AndroidRuntime.cpp
+```
+/*
+ * Register android native functions with the VM.
+ */
+/*static*/ int AndroidRuntime::startReg(JNIEnv* env)
+{
+    /*
+     * This hook causes all future threads created in this process to be
+     * attached to the JavaVM.  (This needs to go away in favor of JNI
+     * Attach calls.)
+     */
+    androidSetCreateThreadFunc((android_create_thread_fn) javaCreateThreadEtc);
+
+    ALOGV("--- registering native functions ---\n");
+
+    /*
+     * Every "register" function calls one or more things that return
+     * a local reference (e.g. FindClass).  Because we haven't really
+     * started the VM yet, they're all getting stored in the base frame
+     * and never released.  Use Push/Pop to manage the storage.
+     */
+    env->PushLocalFrame(200);
+
+    if (register_jni_procs(gRegJNI, NELEM(gRegJNI), env) < 0) {
+        env->PopLocalFrame(NULL);
+        return -1;
+    }
+    env->PopLocalFrame(NULL);
+
+    //createJavaThread("fubar", quickTest, (void*) "hello");
+
+    return 0;
+}
+```
+
+AndroidRuntime类的成员函数startReg首先调用函数androidSetCreateThreadFunc来设置一个线程创建钩子
+javaCreateThreadEtc。这个线程创建钩子是用来初始化一个Native线程的JNI环境的，也就是说，
+当我们在C++代码中创建一个Native线程的时候，函数javaCreateThreadEtc会被调用来初始化该Native线程的
+JNI环境。后面在分析Dalvik虚拟机线程的创建过程时，我们再详细分析函数javaCreateThreadEtc的实现。
+AndroidRuntime类的成员函数startReg接着调用函数register_jni_procs来注册Android核心类的JNI方法。
+在注册JNI方法的过程中，需要在Native代码中引用到一些Java对象，这些Java对象引用需要记录在当前线程
+的一个Native堆栈中。但是此时Dalvik虚拟机还没有真正运行起来，也就是当前线程的Native堆栈还没有准备
+就绪。在这种情况下，就需要在注册JNI方法之前，手动地将在当前线程的Native堆栈中压入一个帧（Frame），
+并且在注册JNI方法之后，手动地将该帧弹出来。
+当前线程的JNI环境是由参数env所指向的一个JNIEnv对象来描述的，通过调用它的成员函数PushLocalFrame和
+PopLocalFrame就可以手动地往当前线程的Native堆栈压入和弹出一个帧。注意，这个帧是一个本地帧，
+只可以用来保存Java对象在Native代码中的本地引用。
+
+path: frameworks/base/core/jni/AndroidRuntime.cpp
+```
+static int register_jni_procs(const RegJNIRec array[], size_t count, JNIEnv* env)
+{
+    for (size_t i = 0; i < count; i++) {
+        if (array[i].mProc(env) < 0) {
+#ifndef NDEBUG
+            ALOGD("----------!!! %s failed to load\n", array[i].mName);
+#endif
+            return -1;
+        }
+    }
+    return 0;
+}
+```
+
+从前面的调用过程可以知道，参数array指向的是全局变量gRegJNI所描述的一个JNI方法注册函数表，其中，
+每一个表项都用一个RegJNIRec对象来描述，而每一个RegJNIRec对象都有一个成员变量mProc，指向一个
+JNI方法注册函数。通过依次调用这些注册函数，就可以将Android核心类的JNI方法注册到前面的所创建的
+Dalvik虚拟机中去。通过观察全局变量gRegJNI所描述的JNI方法注册函数表，我们就可以看出注册了哪些
+Android核心类的JNI方法，如下所示：
+
+https://github.com/leeminghao/about-android/blob/master/dalvik/start/gRegJNI.md
+
+回到AndroidRuntime类的成员函数startReg中，接下来我们就继续分析函数androidSetCreateThreadFunc
+的实现，以便可以了解线程创建钩子javaCreateThreadEtc的注册过程。
+
+path: system/core/libutils/Threads.cpp
+```
+static android_create_thread_fn gCreateThreadFn = androidCreateRawThreadEtc;
+
+int androidCreateThreadEtc(android_thread_func_t entryFunction,
+                            void *userData,
+                            const char* threadName,
+                            int32_t threadPriority,
+                            size_t threadStackSize,
+                            android_thread_id_t *threadId)
+{
+    return gCreateThreadFn(entryFunction, userData, threadName,
+        threadPriority, threadStackSize, threadId);
+}
+
+void androidSetCreateThreadFunc(android_create_thread_fn func)
+{
+    gCreateThreadFn = func;
+}
+```
+
+从这里就可以看到，线程创建钩子javaCreateThreadEtc被保存在一个函数指针gCreateThreadFn中。
+注意，函数指针gCreateThreadFn默认是指向函数androidCreateRawThreadEtc的，也就是说，如果
+我们不设置线程创建钩子的话，函数androidCreateRawThreadEtc就是默认使用的线程创建函数。
+后面在分析Dalvik虚拟机线程的创建过程时，我们再详细分析函数指针gCreateThreadFn是如何使用的。
+
+Zygote进程为Android系统准备好了一个Dalvik虚拟机实例，以后Zygote进程在创建Android应用程序进程的
+时候，就可以将它自身的Dalvik虚拟机实例复制到新创建Android应用程序进程中去，从而加快了Android
+应用程序进程的启动过程。此外，Java核心类和Android核心类（位于dex文件中），以及它们的JNI方法
+（位于so文件中），都是以内存映射的方式来读取的，因此，Zygote进程在创建Android应用程序进程的时候，
+除了可以将自身的Dalvik虚拟机实例复制到新创建的Android应用程序进程之外，还可以与新创建的Android
+应用程序进程共享Java核心类和Android核心类，以及它们的JNI方法，这样就可以节省内存消耗。
+同时，我们也应该看到，Zygote进程为了加快Android应用程序进程的启动过程，牺牲了自己的启动速度，
+因为它需要加载大量的Java核心类，以及注册大量的Android核心类JNI方法。Dalvik虚拟机在加载Java核心类
+的时候，还需要对它们进行验证以及优化，这些通常都是比较耗时的。又由于Zygote进程是由init进程启动的，
+也就是说Zygote进程在是开机的时候进行启动的，因此，Zygote进程的牺牲是比较大的。不过毕竟我们在玩
+手机的时候，很少会关机，也就是很少开机，因此，牺牲Zygote进程的启动速度是值得的，换来的是Android
+应用程序的快速启动。
