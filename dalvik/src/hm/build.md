@@ -34,20 +34,35 @@ include $(BUILD_JAVA_LIBRARY)
 
 .
 ├── classes
+
 │   └── com
+
 │       └── android
+
 │           └── commands
+
 │               └── hm
+
 │                   └── Hm.class
+
 ├── classes.dex
+
 ├── classes-full-debug.jar
+
 ├── classes.jar
+
 ├── classes-jarjar.jar
+
 ├── classes-with-local.dex
+
 ├── emma_out
+
 │   └── lib
+
 │       └── classes-jarjar.jar
+
 ├── javalib.jar
+
 └── noproguard.classes.jar
 
 生成过程
@@ -61,8 +76,11 @@ path: build/core/base_rules.mk
 $(LOCAL_MODULE): $(LOCAL_BUILT_MODULE) $(LOCAL_INSTALLED_MODULE)
 ```
 
-LOCAL_MODULE = hm 依赖于
-LOCAL_INSTALLED_MODULE = out/target/product/cancro/system/framework/hm.jar
+LOCAL_MODULE = hm 依赖于 LOCAL_INSTALLED_MODULE
+
+* LOCAL_INSTALLED_MODULE
+
+out/target/product/cancro/system/framework/hm.jar
 
 ### LOCAL_INSTALLED_MODULE
 
@@ -74,8 +92,10 @@ $(LOCAL_INSTALLED_MODULE): $(LOCAL_BUILT_MODULE) | $(ACP)
     $(PRIVATE_POST_INSTALL_CMD)
 ```
 
-LOCAL_INSTALLED_MODULE 依赖于
+LOCAL_INSTALLED_MODULE 依赖于 LOCAL_BUILT_MODULE
+
 * LOCAL_BUILT_MODULE
+
   out/target/product/cancro/obj/JAVA_LIBRARIES/hm_intermediates/javalib.jar
 
 ### LOCAL_BUILT_MODULE
@@ -86,8 +106,10 @@ $(LOCAL_BUILT_MODULE) : $(common_javalib.jar) | $(ACP)
     $(call copy-file-to-target)
 ```
 
-LOCAL_BUILT_MODULE 依赖于
+LOCAL_BUILT_MODULE 依赖于 common_javalib.jar
+
 * common_javalib.jar
+
   out/target/common/obj/JAVA_LIBRARIES/hm_intermediates/javalib.jar
 
 ### common_javalib.jar
@@ -104,8 +126,10 @@ ifneq ($(extra_jar_args),)
 endif
 ```
 
-common_javalib.jar 依赖于
+common_javalib.jar 依赖于 built_dex
+
 * built_dex
+
   out/target/common/obj/JAVA_LIBRARIES/hm_intermediates/classes.dex
 
 ##### create-empty-package
@@ -151,8 +175,10 @@ ifneq ($(GENERATE_DEX_DEBUG),)
 endif
 ```
 
-built_dex 依赖于
+built_dex 依赖于 built_dex_intermediate
+
 * built_dex_intermediate
+
   out/target/common/obj/JAVA_LIBRARIES/hm_intermediates/classes-with-local.dex
 
 ### built_dex_intermediate
@@ -163,8 +189,10 @@ $(built_dex_intermediate): $(full_classes_proguard_jar) $(DX)
     $(transform-classes.jar-to-dex)
 ```
 
-built_dex_intermediate 依赖于
+built_dex_intermediate 依赖于 full_classes_proguard_jar
+
 * full_classes_proguard_jar
+
   out/target/common/obj/JAVA_LIBRARIES/hm_intermediates/noproguard.classes.jar
 
 ##### transform-classes.jar-to-dex
@@ -201,8 +229,10 @@ $(full_classes_proguard_jar) : $(full_classes_jar) | $(ACP)
     $(hide) $(ACP_VP) -fp $< $@
 ```
 
-full_classes_proguard_jar 依赖于
+full_classes_proguard_jar 依赖于 full_classes_jar
+
 * full_classes_jar
+
   out/target/common/obj/JAVA_LIBRARIES/hm_intermediates/classes.jar
 
 ### full_classes_jar
@@ -215,8 +245,10 @@ $(full_classes_jar): $(full_classes_emma_jar) | $(ACP)
     $(hide) $(ACP_VP) -fp $< $@
 ```
 
-full_classes_jar 依赖于
+full_classes_jar 依赖于 full_classes_emma_jar
+
 * full_classes_emma_jar
+
   out/target/common/obj/JAVA_LIBRARIES/hm_intermediates/emma_out/lib/classes-jarjar.jar
 
 ### full_classes_emma_jar
@@ -228,8 +260,10 @@ $(full_classes_emma_jar): $(full_classes_jarjar_jar) | $(ACP)
     $(copy-file-to-target)
 ```
 
-full_classes_emma_jar依赖于
+full_classes_emma_jar 依赖于 full_classes_jarjar_jar
+
 * full_classes_jarjar_jar
+
   out/target/common/obj/JAVA_LIBRARIES/hm_intermediates/classes-jarjar.jar
 
 ### full_classes_jarjar_jar
@@ -241,8 +275,10 @@ $(full_classes_jarjar_jar): $(full_classes_compiled_jar) | $(ACP)
     $(hide) $(ACP_VP) -fp $< $@
 ```
 
-full_classes_jarjar_jar依赖于
+full_classes_jarjar_jar 依赖于 full_classes_compiled_jar
+
 * full_classes_compiled_jar
+
   out/target/common/obj/JAVA_LIBRARIES/hm_intermediates/classes-full-debug.jar
 
 ### full_classes_compiled_jar
