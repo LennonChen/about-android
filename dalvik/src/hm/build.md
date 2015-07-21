@@ -358,3 +358,28 @@ $(hide) jar $(if $(strip $(PRIVATE_JAR_MANIFEST)),-cfm,-cf) \
     $@ $(PRIVATE_JAR_MANIFEST) -C $(PRIVATE_CLASS_INTERMEDIATES_DIR) .
 endef
 ```
+
+执行命令类似如下所示：
+
+```
+echo "target Java: hm (out/target/common/obj/JAVA_LIBRARIES/hm_intermediates/classes)"
+rm -f out/target/common/obj/JAVA_LIBRARIES/hm_intermediates/classes-full-debug.jar
+rm -rf out/target/common/obj/JAVA_LIBRARIES/hm_intermediates/classes
+mkdir -p out/target/common/obj/JAVA_LIBRARIES/hm_intermediates/
+mkdir -p out/target/common/obj/JAVA_LIBRARIES/hm_intermediates/classes
+
+for f in ; do if [ ! -f $f ]; then echo Missing file $f; exit 1; fi; unzip -qo $f -d out/target/common/obj/JAVA_LIBRARIES/hm_intermediates/classes; done ;rm -rf out/target/common/obj/JAVA_LIBRARIES/hm_intermediates/classes/META-INF
+rm -f out/target/common/obj/JAVA_LIBRARIES/hm_intermediates/classes/java-source-list
+
+echo -n 'frameworks/base/cmds/hm/src/com/android/commands/hm/Hm.java ' >> out/target/common/obj/JAVA_LIBRARIES/hm_intermediates/classes/java-source-list
+
+if [ -d "out/target/common/obj/JAVA_LIBRARIES/hm_intermediates/src" ]; then find out/target/common/obj/JAVA_LIBRARIES/hm_intermediates/src -name '*.java' >> out/target/common/obj/JAVA_LIBRARIES/hm_intermediates/classes/java-source-list; fi
+
+tr ' ' '\n' < out/target/common/obj/JAVA_LIBRARIES/hm_intermediates/classes/java-source-list | sort -u > out/target/common/obj/JAVA_LIBRARIES/hm_intermediates/classes/java-source-list-uniq
+
+if [ -s out/target/common/obj/JAVA_LIBRARIES/hm_intermediates/classes/java-source-list-uniq ] ; then javac -J-Xmx512M -target 1.5 -Xmaxerrs 9999999 -encoding UTF-8 -g  -bootclasspath out/target/common/obj/JAVA_LIBRARIES/core_intermediates/classes.jar -classpath out/target/common/obj/JAVA_LIBRARIES/core_intermediates/classes.jar:out/target/common/obj/JAVA_LIBRARIES/core-junit_intermediates/classes.jar:out/target/common/obj/JAVA_LIBRARIES/ext_intermediates/classes.jar:out/target/common/obj/JAVA_LIBRARIES/framework_intermediates/classes.jar:out/target/common/obj/JAVA_LIBRARIES/framework2_intermediates/classes.jar:out/target/common/obj/JAVA_LIBRARIES/miuiframework_intermediates/classes.jar  -extdirs "" -d out/target/common/obj/JAVA_LIBRARIES/hm_intermediates/classes  \@out/target/common/obj/JAVA_LIBRARIES/hm_intermediates/classes/java-source-list-uniq || ( rm -rf out/target/common/obj/JAVA_LIBRARIES/hm_intermediates/classes ; exit 41 ) fi
+
+rm -f out/target/common/obj/JAVA_LIBRARIES/hm_intermediates/classes/java-source-list
+rm -f out/target/common/obj/JAVA_LIBRARIES/hm_intermediates/classes/java-source-list-uniq
+jar -cf out/target/common/obj/JAVA_LIBRARIES/hm_intermediates/classes-full-debug.jar  -C out/target/common/obj/JAVA_LIBRARIES/hm_intermediates/classes .
+```
