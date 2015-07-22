@@ -129,3 +129,5 @@ https://github.com/leeminghao/about-android/blob/master/dalvik/start/dvmStartup.
 onVmCreated方法来进行一些早期的初始化操作:
 
 #### onVmCreated(env)
+
+https://github.com/leeminghao/about-android/blob/master/dalvik/src/hm/onVmCreated.md
