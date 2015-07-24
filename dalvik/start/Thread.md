@@ -1,8 +1,32 @@
 Thread
 ========================================
 
+线程结构体定义如下所示:
+
 path: dalvik/vm/Thread.h
 ```
+#define kMinStackSize       (512 + STACK_OVERFLOW_RESERVE)
+#define kDefaultStackSize   (16*1024)   /* four 4K pages */
+#define kMaxStackSize       (256*1024 + STACK_OVERFLOW_RESERVE)
+
+/*
+ * Interpreter control struction.  Packed into a long long to enable
+ * atomic updates.
+ */
+union InterpBreak {
+    volatile int64_t   all;
+    struct {
+        uint16_t   subMode;
+        uint8_t    breakFlags;
+        int8_t     unused;   /* for future expansion */
+#ifndef DVM_NO_ASM_INTERP
+        void* curHandlerTable;
+#else
+        int32_t    unused1;
+#endif
+    } ctl;
+};
+
 /*
  * Our per-thread data.
  *
@@ -218,4 +242,36 @@ struct Thread {
     u4 spillRegion[MAX_SPILL_JIT_IA];
 #endif
 };
+```
+
+Thread.InterpSaveState
+----------------------------------------
+
+```
+    /*
+     * Interpreter state which must be preserved across nested
+     * interpreter invocations (via JNI callbacks).  Must be the first
+     * element in Thread.
+     */
+    InterpSaveState interpSave;
+```
+
+InterpSaveState结构体定义如下所示:
+
+path: dalvik/vm/interp/InterpState.h
+```
+struct InterpSaveState {
+    const u2*       pc;         // Dalvik PC
+    u4*             curFrame;   // Dalvik frame pointer
+    const Method    *method;    // Method being executed
+    DvmDex*         methodClassDex;
+    JValue          retval;
+    void*           bailPtr;
+#if defined(WITH_TRACKREF_CHECKS)
+    int             debugTrackedRefStart;
+#else
+    int             unused;        // Keep struct size constant
+#endif
+    struct InterpSaveState* prev;  // To follow nested activations
+} __attribute__ ((__packed__));
 ```
