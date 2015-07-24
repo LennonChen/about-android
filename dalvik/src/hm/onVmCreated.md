@@ -128,6 +128,8 @@ static jclass FindClass(JNIEnv* env, const char* name) {
 
 ### dvmGetCurrentJNIMethod
 
+dvmGetCurrentJNIMethod获取当前线程的JNI方法
+
 path: dalvik/vm/Jni.cpp
 ```
 /*
@@ -145,7 +147,9 @@ const Method* dvmGetCurrentJNIMethod() {
 }
 ```
 
-### dvmThreadSelf
+#### dvmThreadSelf
+
+dvmThreadSelf通过调用pthread_getspecific函数来获取当前主线程的Thread结构.
 
 path: dalvik/vm/Thread.cpp
 ```

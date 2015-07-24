@@ -1,8 +1,6 @@
 dvmStartup
 ========================================
 
-
-
 path: dalvik/vm/Init.cpp
 ```
 /*
@@ -228,15 +226,24 @@ std::string dvmStartup(int argc, const char* const argv[],
 }
 ```
 
+setCommandLineDefaults
+----------------------------------------
+
 1.调用函数setCommandLineDefaults来给Dalvik虚拟机设置默认参数，因为启动选项不一定会指定
 Dalvik虚拟机的所有属性。
 
 https://github.com/leeminghao/about-android/blob/master/dalvik/start/setCommandLineDefaults.md
 
+processOptions
+----------------------------------------
+
 2.调用函数processOptions来处理参数argv和argc所描述的启动选项了，也就是根据这些选项值来
 设置Dalvik虚拟机的属性，例如，设置Dalvik虚拟机的Java对象堆的最大值。
 
 https://github.com/leeminghao/about-android/blob/master/dalvik/start/processOptions.md
+
+blockSignals
+----------------------------------------
 
 3.如果我们没有在Dalvik虚拟机的启动选项中指定-Xrs，那么gDvm.reduceSignals的值就会被设置为
 false，表示要在当前线程中屏蔽掉SIGQUIT信号。在这种情况下，会有一个线程专门用来处理SIGQUIT
@@ -278,6 +285,9 @@ static void blockSignals()
 }
 ```
 
+dvmAllocTrackerStartup
+----------------------------------------
+
 4.函数dvmAllocTrackerStartup用来初始化Davlik虚拟机的对象分配记录子模块，这样我们就可以通过
 DDMS工具来查看Davlik虚拟机的对象分配情况。
 
@@ -299,6 +309,9 @@ bool dvmAllocTrackerStartup()
 }
 ```
 
+dvmGcStartUp
+----------------------------------------
+
 5.函数dvmGcStartup用来初始化Davlik虚拟机的垃圾收集(GC)子模块。
 
 path: dalvik/vm/alloc/Alloc.cpp
@@ -317,6 +330,9 @@ bool dvmGcStartup()
 }
 ```
 
+dvmThreadStartup
+----------------------------------------
+
 6.函数dvmThreadStartup用来初始化Davlik虚拟机的线程列表、为主线程创建一个Thread对象以及
 为主线程初始化执行环境。Davlik虚拟机中的所有线程均是本地操作系统线程。
 在Linux系统中，一般都是使用pthread库来创建和管理线程的，Android系统也不例外，也就是说，
@@ -324,6 +340,9 @@ Davlik虚拟机中的每一个线程均是一个pthread线程。注意，Davlik�
 Thread结构体来描述，这些Thread结构体组织在一个列表中，因此，这里要先对它进行初始化。
 
 https://github.com/leeminghao/about-android/blob/master/dalvik/start/dvmThreadStartup.md
+
+dvmInlineNativeStartup
+----------------------------------------
 
 7.函数dvmInlineNativeStartup用来初始化Davlik虚拟机的内建Native函数表。这些内建Native函数主要是
 针对java.Lang.String、java.Lang.Math、java.Lang.Float和java.Lang.Double类的，用来替换这些类的
@@ -348,6 +367,9 @@ bool dvmInlineNativeStartup()
     return true;
 }
 ```
+
+dvmRegisterMapStartup
+----------------------------------------
 
 8.函数dvmRegisterMapStartup用来初始化寄存器映射集(Register Map)子模块。Davlik虚拟机支持
 精确垃圾收集(Exact GC或者Precise GC)，也就是说，在进行垃圾收集的时候，Davlik虚拟机可以准确
@@ -374,6 +396,9 @@ bool dvmRegisterMapStartup()
 }
 ```
 
+dvmInstanceofStartup
+----------------------------------------
+
 9.函数dvmInstanceofStartup用来初始化instanceof操作符子模块。在使用instanceof操作符来判断一个
 对象A是否是一个类B的实例时，Davlik虚拟机需要检查类B是否是从对象A的声明类继承下来的。由于这个
 检查的过程比较耗时，Davlik虚拟机在内部使用一个缓冲，用来记录第一次两个类之间的instanceof操作结果，
@@ -393,15 +418,24 @@ bool dvmInstanceofStartup()
 }
 ```
 
+dvmClassStartup
+----------------------------------------
+
 10.函数dvmClassStartup用来初始化启动类加载器(Bootstrap Class Loader)，同时还会初始化
 java.lang.Class类。启动类加载器是用来加载Java核心类的，用来保证安全性，即保证加载的
 Java核心类是合法的。
 
 https://github.com/leeminghao/about-android/blob/master/dalvik/start/dvmClassStartup.md
 
+dvmFindRequiredClassesAndMembers
+----------------------------------------
+
 11.函数dvmFindRequiredClassesAndMembers用来初始化一些必需的类.
 
-https://github.com/leeminghao/about-android/blob/master/dalvik/start/InitRefs.cpp
+https://github.com/leeminghao/about-android/blob/master/dalvik/start/dvmFindRequiredClassesAndMembers.md
+
+dvmStringInternStartup
+----------------------------------------
 
 12.函数dvmStringInternStartup用来初始化java.lang.String类内部私有一个字符串池，这样当Dalvik
 虚拟机运行起来之后，我们就可以调用java.lang.String类的成员函数intern来访问这个字符串池里面的字符串。
@@ -424,6 +458,9 @@ bool dvmStringInternStartup()
 }
 ```
 
+dvmNativeStartup
+----------------------------------------
+
 13.函数dvmNativeStartup用来初始化Native Shared Object库加载表，也就是SO库加载表。
 这个加载表是用来描述当前进程有哪些SO文件已经被加载过了。
 
@@ -441,6 +478,9 @@ bool dvmNativeStartup()
     return true;
 }
 ```
+
+dvmInternalNativeStartup
+----------------------------------------
 
 14.函数dvmInternalNativeStartup用来初始化一个内部Native函数表。所有需要直接访问Dalvik虚拟机
 内部函数或者数据结构的Native函数都定义在这张表中，因为它们如果定义在外部的其它SO文件中，
@@ -470,6 +510,9 @@ bool dvmInternalNativeStartup()
     return true;
 }
 ```
+
+dvmJniStartup
+----------------------------------------
 
 15.函数dvmJniStartup用来初始化全局引用表，以及加载一些与Direct Buffer相关的类，
 如DirectBuffer、PhantomReference和ReferenceQueue等。我们在一个JNI方法中，
@@ -520,8 +563,14 @@ bool dvmJniStartup() {
 }
 ```
 
+dvmProfilingStartup
+----------------------------------------
+
 16.dvmProfilingStartup这个函数定义在文件dvm/vm/Profile.cpp用来初始化Dalvik虚拟机的性能分析子模块，
 以及加载dalvik.system.VMDebug类等。
+
+dvmValidateBoxClasses
+----------------------------------------
 
 17.dvmValidateBoxClasses这个函数定义在文件dalvik/vm/reflect/Reflect.cpp中，用来验证Dalvik虚拟机
 中存在相应的装箱类，并且这些装箱类有且仅有一个成员变量，这个成员变量是用来描述对应的数字值的。
@@ -531,28 +580,49 @@ java.lang.Byte、java.lang.Short、java.lang.Integer和java.lang.Long。
 相应地，也要求能将一个装箱类对象转换成一个数字，例如，将一个值等于1的java.lang.Integer对象转换
 为数字1。
 
+dvmPrepMainForJni
+----------------------------------------
+
 18.dvmPrepMainForJni这个函数定义在文件dalvik/vm/Thread.cpp中，用来准备主线程的JNI环境，即将
 在前面为主线程创建的Thread对象与在前面中创建的JNI环境关联起来。在前面虽然我们已经为当前线程
 创建好一个JNI环境了，但是还没有将该JNI环境与主线程关联，也就是还没有将主线程的ID设置到该JNI
 环境中去。
 
+https://github.com/leeminghao/about-android/blob/master/dalvik/start/dvmPrepMainThread.md
+
+registerSystemNatives
+----------------------------------------
+
 19.registerSystemNatives这个函数定义在文件dalvik/vm/Init.cpp中，它调用另外一个函数
 jniRegisterSystemMethods，后者接着又调用了函数registerCoreLibrariesJni来为Java核心类注册JNI方法。
 函数registerCoreLibrariesJni定义在文件libcore/luni/src/main/native/Register.cpp中。
+
+dvmCreateStockExceptions
+----------------------------------------
 
 20.dvmCreateStockExceptions这个函数定义在文件dalvik/vm/alloc/Alloc.cpp中，用来预创建一些与
 内存分配有关的异常对象，并且将它们缓存起来，以便以后可以快速使用。这些异常对象包括
 java.lang.OutOfMemoryError、java.lang.InternalError和java.lang.NoClassDefFoundError。
 
+dvmPrepMainThread
+----------------------------------------
+
 21.dvmPrepMainThread这个函数定义在文件dalvik/vm/Thread.cpp中，用来为主线程创建一个
 java.lang.ThreadGroup对象、一个java.lang.Thread对角和java.lang.VMThread对象。
 这些Java对象和在前面创建的C++层Thread对象关联一起，共同用来描述Dalvik虚拟机的主线程。
 
+dvmReferenceTableEntries
+----------------------------------------
+
 22.dvmReferenceTableEntries这个函数定义在文件dalvik/vm/ReferenceTable.h中，用来确保
 主线程当前不引用有任何Java对象，这是为了保证主线程接下来以干净的方式来执行程序入口。
 
+dvmDebuggerStartup
+----------------------------------------
+
 23.dvmDebuggerStartup这个函数定义在文件dalvik/vm/Debugger.cpp中，用来初始化Dalvik
 虚拟机的调试环境。注意，Dalvik虚拟机与Java虚拟机一样，都是通过JDWP协议来支持远程调试的。
+
 
 这段代码完成Dalvik虚拟机的最后一步初始化工作。它检查Dalvik虚拟机是否指定了-Xzygote启动选项。
 如果指定了的话，那么就说明当前是在Zyogte进程中启动Dalvik虚拟机，因此，接下来就会调用函数
