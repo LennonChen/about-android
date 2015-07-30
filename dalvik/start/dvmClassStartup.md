@@ -1,3 +1,6 @@
+dvmClassStartup
+========================================
+
 path: dalvik/vm/oo/Class.cpp
 ```
 /*
@@ -62,7 +65,46 @@ bool dvmClassStartup()
 }
 ```
 
-### createInitialClasses
+检查gDvm.bootClassPathStr是否合法:
+----------------------------------------
+
+gDvm.bootClassPathStr的初始化如下所示:
+
+1. 在setCommandLineDefaults函数中通过环境变量BOOTCLASSPATH来初始化的.
+
+https://github.com/leeminghao/about-android/blob/master/dalvik/start/setCommandLineDefaults.md
+
+2. 在processOptions中通过参数选项"-Xbootclasspath:", "-Xbootclasspath/a:" 和
+"-Xbootclasspath/p:"来进行设置, 具体实现如下所示：
+
+https://github.com/leeminghao/about-android/blob/master/dalvik/start/processOptions.md
+
+检查gDvm.bootClassPathStr是否等于当前路径".", 如果等于则出错返回.
+
+为gDvm.loadedClasses HashTable分配空间:
+----------------------------------------
+
+gDvm.loadedClasses是一个Hash表，用来保存对应类名所对应的ClassObject对象的.
+
+```
+    gDvm.loadedClasses =
+        dvmHashTableCreate(256, (HashFreeFunc) dvmFreeClassInnards);
+```
+
+为gDvm.pBootLoaderAlloc分配空间:
+----------------------------------------
+
+```
+    gDvm.pBootLoaderAlloc = dvmLinearAllocCreate(NULL);
+    if (gDvm.pBootLoaderAlloc == NULL)
+        return false;
+```
+
+接下来初始化gDvm.classSerialNumber和gDvm.initiatingLoaderList,初始化完毕之后
+调用createInitialClasses函数来创建类"Ljava/lang/Class". 具体实现如下所示:
+
+createInitialClasses
+----------------------------------------
 
 path: dalvik/vm/oo/Class.cpp
 ```
@@ -109,7 +151,134 @@ static bool createInitialClasses() {
 }
 ```
 
-### processClassPath
+### 1.创建一个ClassObject的结构体clazz.
+
+A.设置clazz的descriptor为"Ljava/lang/Class".
+
+B.将clazz赋值给gDvm.classJavaLangClass.
+
+### 2.调用createPrimitiveType函数创建数据类型的类结构.
+
+#### PrimitiveType
+
+path: dalvik/libdex/DexFile.h
+```
+/*
+ * Enumeration of all the primitive types.
+ */
+enum PrimitiveType {
+    PRIM_NOT        = 0,       /* value is a reference type, not a primitive type */
+    PRIM_VOID       = 1,
+    PRIM_BOOLEAN    = 2,
+    PRIM_BYTE       = 3,
+    PRIM_SHORT      = 4,
+    PRIM_CHAR       = 5,
+    PRIM_INT        = 6,
+    PRIM_LONG       = 7,
+    PRIM_FLOAT      = 8,
+    PRIM_DOUBLE     = 9,
+};
+```
+
+枚举类型PrimitiveType声明的变量分别对应于gDvm中的ClassObject:
+
+path: dalvik/vm/Globals.h
+```
+    /* synthetic classes representing primitive types */
+    ClassObject* typeVoid;
+    ClassObject* typeBoolean;
+    ClassObject* typeByte;
+    ClassObject* typeShort;
+    ClassObject* typeChar;
+    ClassObject* typeInt;
+    ClassObject* typeLong;
+    ClassObject* typeFloat;
+    ClassObject* typeDouble;
+```
+
+#### createPrimitiveType
+
+path: dalvik/vm/oo/Class.cpp
+```
+/*
+ * Synthesize a primitive class.
+ *
+ * Just creates the class and returns it (does not add it to the class list).
+ */
+static bool createPrimitiveType(PrimitiveType primitiveType, ClassObject** pClass)
+{
+    /*
+     * Fill out a few fields in the ClassObject.
+     *
+     * Note that primitive classes do not sub-class the class Object.
+     * This matters for "instanceof" checks. Also, we assume that the
+     * primitive class does not override finalize().
+     */
+
+    const char* descriptor = dexGetPrimitiveTypeDescriptor(primitiveType);
+    assert(descriptor != NULL);
+
+    ClassObject* newClass = (ClassObject*) dvmMalloc(sizeof(*newClass), ALLOC_NON_MOVING);
+    if (newClass == NULL) {
+        return false;
+    }
+
+    DVM_OBJECT_INIT(newClass, gDvm.classJavaLangClass);
+    dvmSetClassSerialNumber(newClass);
+    SET_CLASS_FLAG(newClass, ACC_PUBLIC | ACC_FINAL | ACC_ABSTRACT);
+    newClass->primitiveType = primitiveType;
+    newClass->descriptorAlloc = NULL;
+    newClass->descriptor = descriptor;
+    newClass->super = NULL;
+    newClass->status = CLASS_INITIALIZED;
+
+    /* don't need to set newClass->objectSize */
+
+    LOGVV("Constructed class for primitive type '%s'", newClass->descriptor);
+
+    *pClass = newClass;
+    dvmReleaseTrackedAlloc((Object*) newClass, NULL);
+
+    // Add barrier to force all metadata writes to main memory to complete
+    ANDROID_MEMBAR_FULL();
+
+    return true;
+}
+```
+
+##### dexGetPrimitiveTypeDescriptor
+
+通过传递进来的primitiveType调用函数dexGetPrimitiveTypeDescriptor函数获取对应
+Type的字符串表示:
+
+path: dalvik/libdex/DexFile.cpp
+```
+/* (documented in header) */
+const char* dexGetPrimitiveTypeDescriptor(PrimitiveType type) {
+    switch (type) {
+        case PRIM_VOID:    return "V";
+        case PRIM_BOOLEAN: return "Z";
+        case PRIM_BYTE:    return "B";
+        case PRIM_SHORT:   return "S";
+        case PRIM_CHAR:    return "C";
+        case PRIM_INT:     return "I";
+        case PRIM_LONG:    return "J";
+        case PRIM_FLOAT:   return "F";
+        case PRIM_DOUBLE:  return "D";
+        default:           return NULL;
+    }
+
+    return NULL;
+}
+```
+
+##### 新建一个ClassObject变量newClass
+
+##### DVM_OBJECT_INIT
+
+
+processClassPath
+----------------------------------------
 
 ```
 /*

@@ -421,7 +421,7 @@ bool dvmInstanceofStartup()
 dvmClassStartup
 ----------------------------------------
 
-10.函数dvmClassStartup用来初始化启动类加载器(Bootstrap Class Loader)，同时还会初始化
+10. 函数dvmClassStartup用来初始化启动类加载器(Bootstrap Class Loader)，同时还会初始化
 java.lang.Class类。启动类加载器是用来加载Java核心类的，用来保证安全性，即保证加载的
 Java核心类是合法的。
 

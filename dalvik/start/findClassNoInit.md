@@ -267,3 +267,30 @@ bail:
     return clazz;
 }
 ```
+
+findClassNoInit函数的具体工作如下所示：
+
+dvmThreadSelf & dvmCheckException
+----------------------------------------
+
+1.调用dvmThreadSelf获取当前线程Thread结构,接下来调用dvmCheckException函数检查当前线程
+是否有Exception,具体如下所示:
+
+path: dalvik/vm/Exception.h
+
+```
+/*
+ * Returns "true" if an exception is pending.  Use this if you have a
+ * "self" pointer.
+ */
+INLINE bool dvmCheckException(Thread* self) {
+    return (self->exception != NULL);
+}
+```
+
+dvmLookupClass
+----------------------------------------
+
+2.接下来调用dvmLookupClass函数
+
+https://github.com/leeminghao/about-android/blob/master/dalvik/start/dvmLookupClass.md

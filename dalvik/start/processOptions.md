@@ -1,3 +1,6 @@
+processOptions
+========================================
+
 path: dalvik/vm/Init.cpp
 ```
 /*
@@ -445,4 +448,77 @@ static int processOptions(int argc, const char* const argv[],
 
     return 0;
 }
+```
+
+-Xbootclasspath:
+----------------------------------------
+
+"-Zbootclasspath:"选项用于设置gDvm.bootClassPathStr,具体操作如下所示：
+
+```
+        } else if (strncmp(argv[i], "-Xbootclasspath:",
+                sizeof("-Xbootclasspath:")-1) == 0)
+        {
+            /* set bootclasspath */
+            const char* path = argv[i] + sizeof("-Xbootclasspath:")-1;
+
+            if (*path == '\0') {
+                dvmFprintf(stderr, "Missing bootclasspath path list\n");
+                return -1;
+            }
+            free(gDvm.bootClassPathStr);
+            gDvm.bootClassPathStr = strdup(path);
+        ...
+```
+
+-Xbootclasspath/a:
+----------------------------------------
+
+"-Xbootclasspath/a:"选项用于将app的路径添加到gDvm.bootClassPathStr中去，
+具体实现如下所示：
+
+```
+        } else if (strncmp(argv[i], "-Xbootclasspath/a:",
+                sizeof("-Xbootclasspath/a:")-1) == 0) {
+            const char* appPath = argv[i] + sizeof("-Xbootclasspath/a:")-1;
+
+            if (*(appPath) == '\0') {
+                dvmFprintf(stderr, "Missing appending bootclasspath path list\n");
+                return -1;
+            }
+            char* allPath;
+
+            if (asprintf(&allPath, "%s:%s", gDvm.bootClassPathStr, appPath) < 0) {
+                dvmFprintf(stderr, "Can't append to bootclasspath path list\n");
+                return -1;
+            }
+            free(gDvm.bootClassPathStr);
+            gDvm.bootClassPathStr = allPath;
+        ...
+```
+
+-Xbootclasspath/p:
+----------------------------------------
+
+"-Xbootclasspath/p:"选项用于将预编译好的包添加到gDvm.bootClassPathStr中去,
+具体实现如下所示：
+
+```
+        } else if (strncmp(argv[i], "-Xbootclasspath/p:",
+                sizeof("-Xbootclasspath/p:")-1) == 0) {
+            const char* prePath = argv[i] + sizeof("-Xbootclasspath/p:")-1;
+
+            if (*(prePath) == '\0') {
+                dvmFprintf(stderr, "Missing prepending bootclasspath path list\n");
+                return -1;
+            }
+            char* allPath;
+
+            if (asprintf(&allPath, "%s:%s", prePath, gDvm.bootClassPathStr) < 0) {
+                dvmFprintf(stderr, "Can't prepend to bootclasspath path list\n");
+                return -1;
+            }
+            free(gDvm.bootClassPathStr);
+            gDvm.bootClassPathStr = allPath;
+        ...
 ```

@@ -1,3 +1,6 @@
+setCommandLineDefaults
+========================================
+
 path: dalvik/vm/Init.cpp
 ```
 /*
@@ -88,4 +91,32 @@ static void setCommandLineDefaults()
      */
     gDvm.profilerClockSource = kProfilerClockSourceDual;
 }
+```
+
+gDvm.classPathStr
+----------------------------------------
+
+classPathStr的值为环境变量CLASSPATH所指定的值.
+
+```
+    const char* envStr = getenv("CLASSPATH");
+    if (envStr != NULL) {
+        gDvm.classPathStr = strdup(envStr);
+    } else {
+        gDvm.classPathStr = strdup(".");
+    }
+```
+
+gDvm.bootClassPathStr
+----------------------------------------
+
+bootClassPathStr的值为环境变量BOOTCLASSPATH所指定的值.
+
+```
+    envStr = getenv("BOOTCLASSPATH");
+    if (envStr != NULL) {
+        gDvm.bootClassPathStr = strdup(envStr);
+    } else {
+        gDvm.bootClassPathStr = strdup(".");
+    }
 ```
