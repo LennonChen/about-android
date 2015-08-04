@@ -1,0 +1,43 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <Button
+        android:id="@+id/test_heap_oom"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/test_heap_oom"/>
+
+    <Button
+        android:id="@+id/test_stack_sof"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/test_stack_sof"/>
+
+    <Button
+        android:id="@+id/test_stack_oom"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/test_stack_oom"/>
+
+    <Button
+        android:id="@+id/test_rcp_oom"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/test_rcp_oom"/>
+
+    <Button
+        android:id="@+id/test_method_area_oom"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/test_method_area_oom"/>
+
+    <Button
+        android:id="@+id/test_direct_memory_oom"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/test_direct_memory_oom"/>
+
+</LinearLayout>

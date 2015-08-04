@@ -1,0 +1,49 @@
+info address -- Describe where symbol SYM is stored
+info all-registers -- List of all registers and their contents
+info args -- Argument variables of current stack frame
+info auxv -- Display the inferior's auxiliary vector
+info bookmarks -- Status of user-settable bookmarks
+info breakpoints -- Status of user-settable breakpoints
+info catch -- Exceptions that can be caught in the current stack frame
+info classes -- All Objective-C classes
+info common -- Print out the values contained in a Fortran COMMON block
+info copying -- Conditions for redistributing copies of GDB
+info dcache -- Print information on the dcache performance
+info display -- Expressions to display when program stops
+info extensions -- All filename extensions associated with a source language
+info files -- Names of targets and files being debugged
+info float -- Print the status of the floating point unit
+info frame -- All about selected stack frame
+info functions -- All function names
+info handle -- What debugger does when program gets various signals
+info inferiors -- IDs of currently known inferiors
+info line -- Core addresses of the code for a source line
+info locals -- Local variables of current stack frame
+info macro -- Show the definition of MACRO
+info mem -- Memory region attributes
+info os -- Show OS data ARG
+info program -- Execution status of the program
+info record -- Info record options
+info registers -- List of integer registers and their contents
+info scope -- List the variables local to a scope
+info selectors -- All Objective-C selectors
+info set -- Show all GDB settings
+info sharedlibrary -- Status of loaded shared object libraries
+info signals -- What debugger does when program gets various signals
+info source -- Information about the current source file
+info sources -- Source files in the program
+info stack -- Backtrace of the stack
+info symbol -- Describe what symbol is at location ADDR
+info target -- Names of targets and files being debugged
+info tasks -- Provide information about all known Ada tasks
+info terminal -- Print inferior's saved terminal status
+info threads -- IDs of currently known threads
+info tracepoints -- Status of tracepoints
+info tvariables -- Status of trace state variables and their values
+info types -- All type names
+info variables -- All global and static variable names
+info vector -- Print the status of the vector unit
+info warranty -- Various kinds of warranty you do not have
+info watchpoints -- Synonym for ``info breakpoints''
+info win -- List of all displayed windows
+

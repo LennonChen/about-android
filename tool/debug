@@ -1,0 +1,249 @@
+--在手机上启动gdbserver并attach你想调试的进程，并指定监听调试命令的端口（此端口是手机上的端口）
+
+$ adb shell
+# ps   #查看要调试进程的PID
+# gdbserver :1234 --attach 96   #:1234是端口号，96 是进程ID
+
+        使用adb做端口映射，将pc机上的端口定向到手机上gdbserver监听的端口
+
+$ adb forward tcp:1234 tcp:1234   #端口映射，将pc机的1234端口映射到手机的1234端口
+
+        启动gdb向指定的pc机端口发信息开始调试
+
+android_project_root/prebuilt/linux-x86/arm-eabi-4.4.3/$ ./arm-eabi-gdb   #使用项目下的gdb客户端去连接gdbserver，gdb的类型要选择针对手机平台的，
+    版本要和gdbserver一致。
+
+<gdb> target remote :1234   #连接本地的:1234端口，此端口已经和手机的1234端口做好映射。
+<gdb> file xxx/out/target/xx...xx/symbols/system/bin/mediaserver   #加载可执行程序，注意选择symbols下的，如果调试的进程是app进程，
+    这里选择app_process。
+<gdb> set solib-search-path xxx/out/target/xx...xx/symbols/system/lib   #加载所有的动态连接库，注意选择symbols下的。
+<gdb> bt   #查看调用堆栈
+<gdb> list xxx/xxx..xxx/xxx.cpp   #查看相关文件
+<gdb> b 100    #在文件的第100行打断点
+<gdb> c    #继续执行程序
+
+使用gdbclient简化调试流程
+进入到源码工程目录下，进行环境配置，执行build文件夹下的envsetup.sh和choosecombo xx xx xx 命令，这时就可以使用gdbclient了。
+adb shell进入手机，像之前一样开启gdbserver。
+在pc端的源码根目录下，执行 gdbclient -e mediaserver -p 1234 #从1234端口调试mediaserver
+
+************************************************************************************************
+
+7.7 GDB调试
+
+	先使用adb root，然后使用下面的命令用GDB对Native代码进行调试gdbclient  app_process :5309 com.example.android.trackball进行 USB调试。
+	其中app_process是进程名，5309是端口号，com.example.android.trackball是应用对用的包名，上述命令执行成功后可以在C++代码中设置断点进行调试了。
+	如果提示libpython2.6.so.1找不到，需要用如下命令安装 $sudo apt-get install libpython2.6
+
+
+***********************************************************************************************
+
+当前位置: 主页>嵌入式开发>Android>
+ndk-gdb对java/native code联合调试
+落鹤生 发布于 2012-07-31 10:20 点击:1253次  	
+来自：CSDN博客 原文
+网上有不少文章，谈论 ndk-gdb对java/native code联合调试 ，本人参考了不少，虽然这些文章没能解决问题，但是给了不少的帮助，在此，分享本人搭建 java +native code(c c++)环境的整个过程。
+TAG: 调试  ndk-gdb  
+
+网上有不少文章，谈论 ndk-gdb对java/native code联合调试 ，本人参考了不少，虽然这些文章没能解决问题，但是给了不少的帮助，在此，分享本人搭建 java +native code(c c++)环境的整个过程。
+
+1.  gdb 调试器 与 gdbserver 的关系，就是 gdb 与 stub的关系，如下图所示 
+2.  调试工具 及调试环境
+在搭建android调试环境过程中，很多文章中原理上做了比较好的介绍，但开始始终无法成功，最后发现运行的平台，使用的工具等一些细节方面是失败的主要原因。
+
+            运行环境 ：   cygwin
+
+             ndk  ：   android-ndk-r7b
+
+             gdb  ：   ${ndk-home}\toolchains\arm-linux-androideabi-4.4.3\prebuilt\windows\bin\arm-linux-androideabi-gdb(version = 6.6)
+
+            gdbserver ： 每个模拟器上， 在system/bin/gdbserver 有默认的程序 
+
+                     失败配置： gdbserver (version 7.1)    :     android emulator : 4.0 (version)     14 (API level)
+
+                     成功配置：   gdbserver()                    :     android emulator : 2.3.3 (version)    10 (API level)
+
+注意：经过尝试必须注意 gdb  vs  gdbserver版本的匹配，如果system/bin下的gdbserver 不匹配，可以把匹配的gdbserver push   emulator 然后指定./gdbserver ,必须指定"./"，因为linux下面，默认是寻找 system目录 （第一个陷阱）
+
+3.  ndk 与 native code 这里不具体分析，可参考我其他的文章，这里我们使用 ndk-build NDK_DEBUG=1 生成带符号表的 .so
+4.  gdb  gdbserver 调试过程  [2]
+
+           Android NDK使用C/C++开发的native code，在Linux下调试主要使用GDB调试。
+
+           当然使用Logcat或自己写入文件的方式调试也是可以的。
+
+           有关Log打印可以参考Android开发网早期文章。 
+
+对于使用ndk-build编译出来的工具，除了so库文件外，会有gdbserver和gdb.setup文件，方法为
+(1). 在PC的命令提示符下进入ndk根目录，执行ndk-build NDK_DEBUG=1 这样，将会强制生成debug调试版的文件，将设我们NDK工程名为androidApp ，这里要说明的是编译出来的库文件在libs目录下是没有符号的，我们要obj下的文件，否则symbol无法正确加载。
+(2).  使用ant debug 或者 eclipse 直接生成 androidApp_debug.apk
+(3). 我们将生成的gdbserver和so库文件复制到/data目录下面，使用adb push命令，或者直接使用Eclipse中DDMS的File Explorer手动复制，不过对于真机可能没有这个列举目录的权限，你可以使用Android模拟器。
+或者 使用 adb install -r androidApp_debug.apk 将apk加载到模拟器
+(4).  使用adb shell命令 进入Android手机或模拟器的命令行，进入androidApp 包，ps  查看androidApp 进程 pid
+启动gdbserver，如 ./gdbserver :5039  --attach pid会看到 Listening on port 5039   这代表正在监听。
+(5).  启动客户端  adb forward tcp:5039 tcp:5039  重定向到gdbserver监听端口
+(6) . ${NDK-HOME}\toolchains\arm-linux-androideabi-4.4.3\prebuilt\windows\bin\arm-linux-androideabi-gdb.exe 进入调试状态
+
+(7). (gdb)  target remote :5039  连接 gdbserver进行调试
+
+注意： 在第(6)过程中，可以发现 "no symbol table is loaded"，是应为打包在 androidApp_debug.apk 里面的androidApp.so 是不带有符号表的，需要设置 solib-search-path 来指定收索so的路径，之前可通过show solib-search-path 先观察当前搜索so的路径
+
+(  陷阱二：在linux下面，路径 使用/，如  debug版本so文件所在路径为solib-search-path  ./obj/local/armeabi/***.so，而在window下使用cygwin，set solib-search-path .\obj\local\armeabi\***.so )
+
+此处，由于刚开始对原理不是很清楚，花费了很多时间，都无法加载sysbol  table，痛苦啊！！！
+
+接下来，就可以使用gdb进行调试。
+5. 上述调试方法，所有的都由使用者完成，对于理解整个调用过程，很有帮助，但在实际的项目过程中，可以采用ndk-gdb 来进行调试
+
+具体过程可参考如下 http://www.devdiv.com/thread-32770-1-1.html
+
+再次强调:
+
+(1). 利用这种方式，必须保证gdb 版本与 gdbserver一致， android emulator 版本不能太高，我采用的版本为 2.3.3 api level 10 才成功，否则，可能会产生莫名其妙的问题
+
+(2). 利用这种方式，eclipse 生成的gdb.setup 文件中 set solib-search-path ./obj/local/armeabi/***.so 在cygwin下运行需要人工修正     set solib-search-path .\obj\local/armeabi\***.so
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+调试命令：bt/up/ handle SIGSEGV nostop
+_________________________________________
+
+
+基本工具：
+
+prebuilt/linux-x86/toolchain/arm-eabi-4.4.0/bin
+
+在分析的时候仔细读取汇编会获得更多有用的异常发生时的信息。
+
+1.arm-eabi-addr2line 将类似libxxx.so 0x00012345的调用栈16进制值翻译成文件名和函数名
+
+  arm-eabi-addr2line -e libxxx.so 0x00012345
+
+2.arm-eabi-nm 列出文件的符号信息
+
+  arm-eabi-nm -l -C -n -S libdvm.so > dvm.data
+
+3.arm-eabi-objdump 列出文件的详细信息
+
+  arm-eabi-objdump -C -d libc.so > libc.s
+
+通过以上工具的分析 ，我们可以得到较完整的调用栈以及调用逻辑的汇编码。
+
+然后需要结合ARM架构及ARM汇编的知识（有些情况下可能需要使用gdb）
+
+来分析出现tombstone的原因，以下是本人遇到过的一些tombstone的情况：
+
+1.无效的函数指针：指针为NULL或者已经被重新赋值
+
+2.strlen崩溃：导致不完全的栈信息，栈被破坏
+
+3.FILE操作：因为stdio并非线程安全的，多线程操作时，容易出现异常。
+
+    本文涉及到的tombstone处理的主要逻辑所在文件如下：
+    BootReceiver.java -- frameworks\base\services\java\com\android\server
+    Debuggerd.c -- system\core\debuggerd
+    ThreadLocal.java -- libcore\luni\src\main\java\java\lang
+
+
+ gdb中忽略信号处理
+信号（Signals）
+
+信号是一种软中断，是一种处理异步事件的方法。一般来说，操作系统都支持许多信号。尤其是UNIX，比较重要应用程序一般都会处理信号。UNIX定义了许 多信号，比如SIGINT表示中断字符信号，也就是Ctrl+C的信号，SIGBUS表示硬件故障的信号；SIGCHLD表示子进程状态改变信号； SIGKILL表示终止程序运行的信号，等等。信号量编程是UNIX下非常重要的一种技术。
+
+GDB有能力在你调试程序的时候处理任何一种信号，你可以告诉GDB需要处理哪一种信号。你可以要求GDB收到你所指定的信号时，马上停住正在运行的程序，以供你进行调试。你可以用GDB的handle命令来完成这一功能。
+
+handle
+在GDB中定义一个信号处理。信号可以以SIG开头或不以 SIG开头，可以用定义一个要处理信号的范围（如：SIGIO-SIGKILL，表示处理从SIGIO信号到SIGKILL的信号，其中包括SIGIO， SIGIOT，SIGKILL三个信号），也可以使用关键字all来标明要处理所有的信号。一旦被调试的程序接收到信号，运行程序马上会被GDB停住，以 供调试。其可以是以下几种关键字的一个或多个。
+
+nostop
+当被调试的程序收到信号时，GDB不会停住程序的运行，但会打出消息告诉你收到这种信号。
+stop
+当被调试的程序收到信号时，GDB会停住你的程序。
+print
+当被调试的程序收到信号时，GDB会显示出一条信息。
+noprint
+当被调试的程序收到信号时，GDB不会告诉你收到信号的信息。
+pass
+noignore
+当被调试的程序收到信号时，GDB不处理信号。这表示，GDB会把这个信号交给被调试程序会处理。
+nopass
+ignore
+当被调试的程序收到信号时，GDB不会让被调试程序来处理这个信号。
+
+
+info signals
+info handle
+查看有哪些信号在被GDB检测中。
+
+另外补充：
+
+信号的处理
+程序是和网络相关的，调试期间经常地收到SIGPIPE，导致gdb停下来。看了一下gdb info，解决方法很简单。用handle命令设置一下缺省signal的处理行为就可以了:
+   handle SIGPIPE nostop
+如果连提示信息都不想看见，就可以这样设置:
+   handle SIGPIPE nostop noprint
+就可以了。其他相关信号也可以类似处理。想了解目前的signal状态可以使用info signal察看。
+
+启动配置文件
+GDB使用中比较麻烦的事情，就是每次启动，还要手动敲一把命令，特别是断点比较多的情况，这个特便影响，工作效率。查了一下gdb info，gdb支持自动读取一个启动脚本文件.gdbinit，所以经常输入的启动命令，就都可以写在gdb启动目录的.gdbinit里面。比如
+.gdbinit:
+   file myapp
+   handle SIGPIPE nostop
+   break ss.c:100
+   break ss.c:200
+   run
+GDB和bash类似，也支持source这个命令，执行另外一个脚本文件。所以可以修改一下.gdbinit:
+.gdbinit:
+   file myapp
+   handle SIGPIPE nostop
+   source gdb.break
+   run
+gdb.break:
+   break ss.c:100
+   break ss.c:200
+这样修改的断点配置，只需要编辑gdb.break就可以了。再后来，偶而还是需要单独启动GDB，不想执行自动脚本，于是又改进了一下。首先把.gdbinit命名为gdb.init，然后定义一个shell alias:
+   $ alias .gdb=”gdb -x gdb.init”
+
+这样如果需要使用自动脚本，就用.gdb命令，否则用gdb进入交互状态的gdb。这样配置以后可以一个简单命令就开始调试，整个效率就能提高不少。
+
+注:转自http://blog.scaner.i.thu.cn/index.php/2006/04/15/gdb-tips-1/
+
+注解
+
+1alias命令
+
+alias顾名思义就是起别名的意思，在linux里，可以通过alias命令为常用命令设置快捷方式,命令格式如下： alias name='command' 例如：alias del='rm'
+
+欲显示系统已有别名，直接使用 alias或alias -p
+
+若需要设置的命令别名比较多，可以直接修改/etc/bashrc或~/.bashrc，将需要的别名写到里面即可，不同之处是/etc/bashrc设置的别名对于所有登录用户都起作用，而~/.bashrc只对目前用户起作用。
+
+
+******************************************************************************************
+
+还真有检查某个app持有的未关闭的cursor数量的方法：
+1、执行adb命令：adb shell setprop log.tag.CursorWindowStats VERBOSE
+2、执行你的app，查看log输出，会发现每当app新打开一个cursor，会有如下输出，可以看到打开且未关闭的cursor数量为3
+06-28 16:51:49.514: I/CursorWindowStats(1638): Created a new Cursor. # Open Cursors=3 (# cursors opened by this proc=3)
+
+还有一个很可靠的检查cursor是否泄露的方法：
+1、执行app一段时间，按back键返回桌面；；
+2、进入eclipse的ddms界面，在进程列表选中测试的那个app，点一下进程列表上方中的“Update Heap”按钮；
+3、在ddms界面选择“Heap”页，点一下“Cause GC”，强制此进程gc；
+4、查看logcat输出，如果看到了黄色的warning，内容如下，说明有cursor泄露
+06-28 17:01:38.302: W/CursorWrapperInner(1638): Cursor finalized without prior close()
+
+
+

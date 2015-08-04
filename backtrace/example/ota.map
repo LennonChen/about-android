@@ -1,0 +1,317 @@
+ELF Header:
+  Magic:   7f 45 4c 46 01 01 01 00 00 00 00 00 00 00 00 00 
+  Class:                             ELF32
+  Data:                              2's complement, little endian
+  Version:                           1 (current)
+  OS/ABI:                            UNIX - System V
+  ABI Version:                       0
+  Type:                              DYN (Shared object file)
+  Machine:                           ARM
+  Version:                           0x1
+  Entry point address:               0x1190
+  Start of program headers:          52 (bytes into file)
+  Start of section headers:          41332 (bytes into file)
+  Flags:                             0x5000000, Version5 EABI
+  Size of this header:               52 (bytes)
+  Size of program headers:           32 (bytes)
+  Number of program headers:         8
+  Size of section headers:           40 (bytes)
+  Number of section headers:         24
+  Section header string table index: 23
+
+Section Headers:
+  [Nr] Name              Type            Addr     Off    Size   ES Flg Lk Inf Al
+  [ 0]                   NULL            00000000 000000 000000 00      0   0  0
+  [ 1] .interp           PROGBITS        00000134 000134 000013 00   A  0   0  1
+  [ 2] .dynsym           DYNSYM          00000148 000148 000550 10   A  3   1  4
+  [ 3] .dynstr           STRTAB          00000698 000698 0002d6 00   A  0   0  1
+  [ 4] .hash             HASH            00000970 000970 000268 04   A  2   0  4
+  [ 5] .rel.dyn          REL             00000bd8 000bd8 000068 08   A  2   0  4
+  [ 6] .rel.plt          REL             00000c40 000c40 000218 08   A  2   7  4
+  [ 7] .plt              PROGBITS        00000e58 000e58 000338 00  AX  0   0  4
+  [ 8] .text             PROGBITS        00001190 001190 004b08 00  AX  0   0  4
+  [ 9] .note.android.ide PROGBITS        00005c98 005c98 000018 00   A  0   0  4
+  [10] .ARM.exidx        ARM_EXIDX       00005cb0 005cb0 000130 08  AL  8   0  4
+  [11] .rodata           PROGBITS        00005de0 005de0 003a24 00   A  0   0  4
+  [12] .ARM.extab        PROGBITS        00009804 009804 00003c 00   A  0   0  4
+  [13] .data.rel.ro.loca PROGBITS        0000ad94 009d94 000010 00  WA  0   0  4
+  [14] .preinit_array    PREINIT_ARRAY   0000ada4 009da4 000008 00  WA  0   0  4
+  [15] .init_array       INIT_ARRAY      0000adac 009dac 000008 00  WA  0   0  4
+  [16] .fini_array       FINI_ARRAY      0000adb4 009db4 000008 00  WA  0   0  4
+  [17] .dynamic          DYNAMIC         0000adbc 009dbc 000108 08  WA  3   0  4
+  [18] .got              PROGBITS        0000aec4 009ec4 00013c 00  WA  0   0  4
+  [19] .bss              NOBITS          0000b000 00a000 000004 00  WA  0   0  4
+  [20] .comment          PROGBITS        00000000 00a000 00002f 01  MS  0   0  1
+  [21] .note.gnu.gold-ve NOTE            00000000 00a030 00001c 00      0   0  4
+  [22] .ARM.attributes   ARM_ATTRIBUTES  00000000 00a04c 000036 00      0   0  1
+  [23] .shstrtab         STRTAB          00000000 00a082 0000f0 00      0   0  1
+Key to Flags:
+  W (write), A (alloc), X (execute), M (merge), S (strings)
+  I (info), L (link order), G (group), x (unknown)
+  O (extra OS processing required) o (OS specific), p (processor specific)
+
+There are no section groups in this file.
+
+Program Headers:
+  Type           Offset   VirtAddr   PhysAddr   FileSiz MemSiz  Flg Align
+  PHDR           0x000034 0x00000034 0x00000034 0x00100 0x00100 R   0x4
+  INTERP         0x000134 0x00000134 0x00000134 0x00013 0x00013 R   0x1
+      [Requesting program interpreter: /system/bin/linker]
+  LOAD           0x000000 0x00000000 0x00000000 0x09840 0x09840 R E 0x1000
+  LOAD           0x009d94 0x0000ad94 0x0000ad94 0x0026c 0x00270 RW  0x1000
+  DYNAMIC        0x009dbc 0x0000adbc 0x0000adbc 0x00108 0x00108 RW  0x4
+  GNU_STACK      0x000000 0x00000000 0x00000000 0x00000 0x00000 RW  0
+  EXIDX          0x005cb0 0x00005cb0 0x00005cb0 0x00130 0x00130 R   0x4
+  GNU_RELRO      0x009d94 0x0000ad94 0x0000ad94 0x0026c 0x0026c RW  0x4
+
+ Section to Segment mapping:
+  Segment Sections...
+   00     
+   01     .interp 
+   02     .interp .dynsym .dynstr .hash .rel.dyn .rel.plt .plt .text .note.android.ident .ARM.exidx .rodata .ARM.extab 
+   03     .data.rel.ro.local .preinit_array .init_array .fini_array .dynamic .got .bss 
+   04     .dynamic 
+   05     
+   06     .ARM.exidx 
+   07     .data.rel.ro.local .preinit_array .init_array .fini_array .dynamic .got 
+
+Dynamic section at offset 0x9dbc contains 28 entries:
+  Tag        Type                         Name/Value
+ 0x00000003 (PLTGOT)                     0xaee8
+ 0x00000002 (PLTRELSZ)                   536 (bytes)
+ 0x00000017 (JMPREL)                     0xc40
+ 0x00000014 (PLTREL)                     REL
+ 0x00000011 (REL)                        0xbd8
+ 0x00000012 (RELSZ)                      104 (bytes)
+ 0x00000013 (RELENT)                     8 (bytes)
+ 0x6ffffffa (RELCOUNT)                   10
+ 0x00000015 (DEBUG)                      0x0
+ 0x00000006 (SYMTAB)                     0x148
+ 0x0000000b (SYMENT)                     16 (bytes)
+ 0x00000005 (STRTAB)                     0x698
+ 0x0000000a (STRSZ)                      726 (bytes)
+ 0x00000004 (HASH)                       0x970
+ 0x00000001 (NEEDED)                     Shared library: [liblog.so]
+ 0x00000001 (NEEDED)                     Shared library: [libcutils.so]
+ 0x00000001 (NEEDED)                     Shared library: [libc.so]
+ 0x00000001 (NEEDED)                     Shared library: [libstdc++.so]
+ 0x00000001 (NEEDED)                     Shared library: [libm.so]
+ 0x00000020 (PREINIT_ARRAY)              0xada4
+ 0x00000021 (PREINIT_ARRAYSZ)            0x8
+ 0x00000019 (INIT_ARRAY)                 0xadac
+ 0x0000001b (INIT_ARRAYSZ)               8 (bytes)
+ 0x0000001a (FINI_ARRAY)                 0xadb4
+ 0x0000001c (FINI_ARRAYSZ)               8 (bytes)
+ 0x0000001e (FLAGS)                      BIND_NOW
+ 0x6ffffffb (FLAGS_1)                    Flags: NOW
+ 0x00000000 (NULL)                       0x0
+
+Relocation section '.rel.dyn' at offset 0xbd8 contains 13 entries:
+ Offset     Info    Type            Sym.Value  Sym. Name
+0000ad94  00000017 R_ARM_RELATIVE   
+0000ad98  00000017 R_ARM_RELATIVE   
+0000ad9c  00000017 R_ARM_RELATIVE   
+0000ada0  00000017 R_ARM_RELATIVE   
+0000aec4  00000017 R_ARM_RELATIVE   
+0000aec8  00000017 R_ARM_RELATIVE   
+0000aecc  00000017 R_ARM_RELATIVE   
+0000aed0  00000017 R_ARM_RELATIVE   
+0000aee0  00000017 R_ARM_RELATIVE   
+0000aee4  00000017 R_ARM_RELATIVE   
+0000aed4  00000a15 R_ARM_GLOB_DAT    00000000   __stack_chk_guard
+0000aedc  00001115 R_ARM_GLOB_DAT    00000000   __sF
+0000aed8  00004315 R_ARM_GLOB_DAT    00000000   optind
+
+Relocation section '.rel.plt' at offset 0xc40 contains 67 entries:
+ Offset     Info    Type            Sym.Value  Sym. Name
+0000aef4  00003216 R_ARM_JUMP_SLOT   00000000   __libc_init
+0000aef8  00000116 R_ARM_JUMP_SLOT   00000000   __cxa_atexit
+0000aefc  00000c16 R_ARM_JUMP_SLOT   00000000   __android_log_print
+0000af00  00002a16 R_ARM_JUMP_SLOT   00000000   mkdir
+0000af04  00002c16 R_ARM_JUMP_SLOT   00000000   chown
+0000af08  00002416 R_ARM_JUMP_SLOT   00000000   fopen
+0000af0c  00001416 R_ARM_JUMP_SLOT   00000000   fputs
+0000af10  00001016 R_ARM_JUMP_SLOT   00000000   fprintf
+0000af14  00002716 R_ARM_JUMP_SLOT   00000000   fclose
+0000af18  00003816 R_ARM_JUMP_SLOT   00000000   getuid
+0000af1c  00003b16 R_ARM_JUMP_SLOT   00000000   setgroups
+0000af20  00004716 R_ARM_JUMP_SLOT   00000000   setresuid
+0000af24  00003a16 R_ARM_JUMP_SLOT   00000000   setresgid
+0000af28  00003916 R_ARM_JUMP_SLOT   00000000   getgid
+0000af2c  00000616 R_ARM_JUMP_SLOT   00000000   strcmp
+0000af30  00002e16 R_ARM_JUMP_SLOT   00000000   atoi
+0000af34  00004216 R_ARM_JUMP_SLOT   00000000   getopt
+0000af38  00003316 R_ARM_JUMP_SLOT   00000000   exit
+0000af3c  00000e16 R_ARM_JUMP_SLOT   00000000   snprintf
+0000af40  00004816 R_ARM_JUMP_SLOT   00000000   system
+0000af44  00000916 R_ARM_JUMP_SLOT   00000000   __stack_chk_fail
+0000af48  00002316 R_ARM_JUMP_SLOT   00000000   unlink
+0000af4c  00003516 R_ARM_JUMP_SLOT   00000000   creat
+0000af50  00000516 R_ARM_JUMP_SLOT   00000000   __errno
+0000af54  00001816 R_ARM_JUMP_SLOT   00000000   strerror
+0000af58  00000416 R_ARM_JUMP_SLOT   00000000   close
+0000af5c  00002816 R_ARM_JUMP_SLOT   00000000   pipe
+0000af60  00001516 R_ARM_JUMP_SLOT   00000000   malloc
+0000af64  00003116 R_ARM_JUMP_SLOT   00000000   __sprintf_chk
+0000af68  00004016 R_ARM_JUMP_SLOT   00000000   fork
+0000af6c  00005216 R_ARM_JUMP_SLOT   00000000   setenv
+0000af70  00004116 R_ARM_JUMP_SLOT   00000000   execv
+0000af74  00003416 R_ARM_JUMP_SLOT   00000000   _exit
+0000af78  00004516 R_ARM_JUMP_SLOT   00000000   fdopen
+0000af7c  00005116 R_ARM_JUMP_SLOT   00000000   setlinebuf
+0000af80  00000716 R_ARM_JUMP_SLOT   00000000   strncmp
+0000af84  00005316 R_ARM_JUMP_SLOT   00000000   strtok
+0000af88  00004a16 R_ARM_JUMP_SLOT   00000000   fputc
+0000af8c  00002616 R_ARM_JUMP_SLOT   00000000   fgets
+0000af90  00004616 R_ARM_JUMP_SLOT   00000000   waitpid
+0000af94  00003c16 R_ARM_JUMP_SLOT   00000000   mount
+0000af98  00004916 R_ARM_JUMP_SLOT   00000000   umount
+0000af9c  00002d16 R_ARM_JUMP_SLOT   00000000   strstr
+0000afa0  00002516 R_ARM_JUMP_SLOT   00000000   strchr
+0000afa4  00004b16 R_ARM_JUMP_SLOT   00000000   freopen
+0000afa8  00005016 R_ARM_JUMP_SLOT   00000000   setbuf
+0000afac  00002b16 R_ARM_JUMP_SLOT   00000000   chmod
+0000afb0  00004c16 R_ARM_JUMP_SLOT   00000000   fseek
+0000afb4  00002016 R_ARM_JUMP_SLOT   00000000   memset
+0000afb8  00004d16 R_ARM_JUMP_SLOT   00000000   fwrite
+0000afbc  00000316 R_ARM_JUMP_SLOT   00000000   open
+0000afc0  00002216 R_ARM_JUMP_SLOT   00000000   read
+0000afc4  00003716 R_ARM_JUMP_SLOT   00000000   memcmp
+0000afc8  00001616 R_ARM_JUMP_SLOT   00000000   write
+0000afcc  00004e16 R_ARM_JUMP_SLOT   00000000   printf
+0000afd0  00000816 R_ARM_JUMP_SLOT   00000000   strlen
+0000afd4  00004f16 R_ARM_JUMP_SLOT   00000000   puts
+0000afd8  00001316 R_ARM_JUMP_SLOT   00000000   free
+0000afdc  00001216 R_ARM_JUMP_SLOT   00000000   calloc
+0000afe0  00003616 R_ARM_JUMP_SLOT   00000000   __assert2
+0000afe4  00001f16 R_ARM_JUMP_SLOT   00000000   memmove
+0000afe8  00001916 R_ARM_JUMP_SLOT   00000000   lseek
+0000afec  00002116 R_ARM_JUMP_SLOT   00000000   __aeabi_uidiv
+0000aff0  00000d16 R_ARM_JUMP_SLOT   00000000   abort
+0000aff4  00001a16 R_ARM_JUMP_SLOT   00000000   mmap
+0000aff8  00001716 R_ARM_JUMP_SLOT   00000000   munmap
+0000affc  00000f16 R_ARM_JUMP_SLOT   00000000   memcpy
+
+There are no unwind sections in this file.
+
+Symbol table '.dynsym' contains 85 entries:
+   Num:    Value  Size Type    Bind   Vis      Ndx Name
+     0: 00000000     0 NOTYPE  LOCAL  DEFAULT  UND 
+     1: 00000000     0 FUNC    GLOBAL DEFAULT  UND __cxa_atexit
+     2: 00000000     0 FUNC    GLOBAL DEFAULT  UND __aeabi_unwind_cpp_pr0
+     3: 00000000     0 FUNC    GLOBAL DEFAULT  UND open
+     4: 00000000     0 FUNC    GLOBAL DEFAULT  UND close
+     5: 00000000     0 FUNC    GLOBAL DEFAULT  UND __errno
+     6: 00000000     0 FUNC    GLOBAL DEFAULT  UND strcmp
+     7: 00000000     0 FUNC    GLOBAL DEFAULT  UND strncmp
+     8: 00000000     0 FUNC    GLOBAL DEFAULT  UND strlen
+     9: 00000000     0 FUNC    GLOBAL DEFAULT  UND __stack_chk_fail
+    10: 00000000     0 OBJECT  GLOBAL DEFAULT  UND __stack_chk_guard
+    11: 00000000     0 FUNC    GLOBAL DEFAULT  UND __aeabi_unwind_cpp_pr1
+    12: 00000000     0 FUNC    GLOBAL DEFAULT  UND __android_log_print
+    13: 00000000     0 FUNC    GLOBAL DEFAULT  UND abort
+    14: 00000000     0 FUNC    GLOBAL DEFAULT  UND snprintf
+    15: 00000000     0 FUNC    GLOBAL DEFAULT  UND memcpy
+    16: 00000000     0 FUNC    GLOBAL DEFAULT  UND fprintf
+    17: 00000000     0 OBJECT  GLOBAL DEFAULT  UND __sF
+    18: 00000000     0 FUNC    GLOBAL DEFAULT  UND calloc
+    19: 00000000     0 FUNC    GLOBAL DEFAULT  UND free
+    20: 00000000     0 FUNC    GLOBAL DEFAULT  UND fputs
+    21: 00000000     0 FUNC    GLOBAL DEFAULT  UND malloc
+    22: 00000000     0 FUNC    GLOBAL DEFAULT  UND write
+    23: 00000000     0 FUNC    GLOBAL DEFAULT  UND munmap
+    24: 00000000     0 FUNC    GLOBAL DEFAULT  UND strerror
+    25: 00000000     0 FUNC    GLOBAL DEFAULT  UND lseek
+    26: 00000000     0 FUNC    GLOBAL DEFAULT  UND mmap
+    27: 0000b000     0 NOTYPE  GLOBAL DEFAULT  ABS _edata
+    28: 0000b000     0 NOTYPE  GLOBAL DEFAULT  ABS __bss_start
+    29: 0000b004     0 NOTYPE  GLOBAL DEFAULT  ABS _end
+    30: 00000000     0 FUNC    GLOBAL DEFAULT  UND realloc
+    31: 00000000     0 FUNC    GLOBAL DEFAULT  UND memmove
+    32: 00000000     0 FUNC    GLOBAL DEFAULT  UND memset
+    33: 00000000     0 FUNC    GLOBAL DEFAULT  UND __aeabi_uidiv
+    34: 00000000     0 FUNC    GLOBAL DEFAULT  UND read
+    35: 00000000     0 FUNC    GLOBAL DEFAULT  UND unlink
+    36: 00000000     0 FUNC    GLOBAL DEFAULT  UND fopen
+    37: 00000000     0 FUNC    GLOBAL DEFAULT  UND strchr
+    38: 00000000     0 FUNC    GLOBAL DEFAULT  UND fgets
+    39: 00000000     0 FUNC    GLOBAL DEFAULT  UND fclose
+    40: 00000000     0 FUNC    GLOBAL DEFAULT  UND pipe
+    41: 00000000     0 FUNC    GLOBAL DEFAULT  UND lstat
+    42: 00000000     0 FUNC    GLOBAL DEFAULT  UND mkdir
+    43: 00000000     0 FUNC    GLOBAL DEFAULT  UND chmod
+    44: 00000000     0 FUNC    GLOBAL DEFAULT  UND chown
+    45: 00000000     0 FUNC    GLOBAL DEFAULT  UND strstr
+    46: 00000000     0 FUNC    GLOBAL DEFAULT  UND atoi
+    47: 00000000     0 FUNC    GLOBAL DEFAULT  UND opendir
+    48: 00000000     0 FUNC    GLOBAL DEFAULT  UND closedir
+    49: 00000000     0 FUNC    GLOBAL DEFAULT  UND __sprintf_chk
+    50: 00000000     0 FUNC    GLOBAL DEFAULT  UND __libc_init
+    51: 00000000     0 FUNC    GLOBAL DEFAULT  UND exit
+    52: 00000000     0 FUNC    GLOBAL DEFAULT  UND _exit
+    53: 00000000     0 FUNC    GLOBAL DEFAULT  UND creat
+    54: 00000000     0 FUNC    GLOBAL DEFAULT  UND __assert2
+    55: 00000000     0 FUNC    GLOBAL DEFAULT  UND memcmp
+    56: 00000000     0 FUNC    GLOBAL DEFAULT  UND getuid
+    57: 00000000     0 FUNC    GLOBAL DEFAULT  UND getgid
+    58: 00000000     0 FUNC    GLOBAL DEFAULT  UND setresgid
+    59: 00000000     0 FUNC    GLOBAL DEFAULT  UND setgroups
+    60: 00000000     0 FUNC    GLOBAL DEFAULT  UND mount
+    61: 00000000     0 FUNC    GLOBAL DEFAULT  UND stat
+    62: 00000000     0 FUNC    GLOBAL DEFAULT  UND rmdir
+    63: 00000000     0 FUNC    GLOBAL DEFAULT  UND symlink
+    64: 00000000     0 FUNC    GLOBAL DEFAULT  UND fork
+    65: 00000000     0 FUNC    GLOBAL DEFAULT  UND execv
+    66: 00000000     0 FUNC    GLOBAL DEFAULT  UND getopt
+    67: 00000000     0 OBJECT  GLOBAL DEFAULT  UND optind
+    68: 00000000     0 FUNC    GLOBAL DEFAULT  UND readdir
+    69: 00000000     0 FUNC    GLOBAL DEFAULT  UND fdopen
+    70: 00000000     0 FUNC    GLOBAL DEFAULT  UND waitpid
+    71: 00000000     0 FUNC    GLOBAL DEFAULT  UND setresuid
+    72: 00000000     0 FUNC    GLOBAL DEFAULT  UND system
+    73: 00000000     0 FUNC    GLOBAL DEFAULT  UND umount
+    74: 00000000     0 FUNC    GLOBAL DEFAULT  UND fputc
+    75: 00000000     0 FUNC    GLOBAL DEFAULT  UND freopen
+    76: 00000000     0 FUNC    GLOBAL DEFAULT  UND fseek
+    77: 00000000     0 FUNC    GLOBAL DEFAULT  UND fwrite
+    78: 00000000     0 FUNC    GLOBAL DEFAULT  UND printf
+    79: 00000000     0 FUNC    GLOBAL DEFAULT  UND puts
+    80: 00000000     0 FUNC    GLOBAL DEFAULT  UND setbuf
+    81: 00000000     0 FUNC    GLOBAL DEFAULT  UND setlinebuf
+    82: 00000000     0 FUNC    GLOBAL DEFAULT  UND setenv
+    83: 00000000     0 FUNC    GLOBAL DEFAULT  UND strtok
+    84: 00000000     0 FUNC    GLOBAL DEFAULT  UND utime
+
+Histogram for bucket list length (total of 67 buckets):
+ Length  Number     % of total  Coverage
+      0  18         ( 26.9%)
+      1  28         ( 41.8%)     33.3%
+      2  14         ( 20.9%)     66.7%
+      3  3          (  4.5%)     77.4%
+      4  2          (  3.0%)     86.9%
+      5  1          (  1.5%)     92.9%
+      6  1          (  1.5%)    100.0%
+
+No version information found in this file.
+
+Notes at offset 0x0000a030 with length 0x0000001c:
+  Owner		Data size	Description
+  GNU		0x00000009	NT_GNU_GOLD_VERSION (gold version)
+Attribute Section: aeabi
+File Attributes
+  Tag_CPU_name: "ARM v7"
+  Tag_CPU_arch: v7
+  Tag_CPU_arch_profile: Application
+  Tag_ARM_ISA_use: Yes
+  Tag_THUMB_ISA_use: Thumb-2
+  Tag_VFP_arch: VFPv3
+  Tag_NEON_arch: NEONv1
+  Tag_ABI_PCS_wchar_t: 4
+  Tag_ABI_FP_denormal: Needed
+  Tag_ABI_FP_exceptions: Needed
+  Tag_ABI_FP_number_model: IEEE 754
+  Tag_ABI_align8_needed: Yes
+  Tag_ABI_enum_size: int
+  Tag_ABI_HardFP_use: SP and DP
+  Tag_ABI_optimization_goals: Aggressive Debug
+  Tag_unknown_44: 1 (0x1)

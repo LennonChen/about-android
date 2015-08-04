@@ -1,0 +1,10 @@
+sudo add-apt-repository ppa:gnome3-team/gnome3-staging
+sudo add-apt-repository ppa:gnome3-team/gnome3
+sudo apt-get update
+sudo apt-get dist-upgrade
+
+sudo apt-get install bijiben polari gnome-clocks gnome-weather gnome-maps gnome-music gnome-photos gnome-documents gnome-contacts epiphany-browser gnome-sushi gnome-boxes gnome-shell-extensions gnome-tweak-tool
+
+sudo apt-get install ppa-purge
+sudo ppa-purge ppa:gnome3-team/gnome3-staging
+sudo ppa-purge ppa:gnome3-team/gnome3

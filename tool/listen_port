@@ -1,0 +1,69 @@
+
+Reported by skycolo...@gmail.com, Nov 26, 2012
+
+[1]cts-tf > run cts --class android.security.cts.ListeningPortsTest -m testNoListeningLoopbackTcpPorts.
+-----------------------------------------
+testNoListeningLoopbackTcpPorts fail:
+junit.framework.AssertionFailedError: Found port listening on addr=127.0.0.1, port=6939, UID=0 in /proc/net/tcp 
+-----------------------------------------
+
+[2]=> adb shell
+shell@android:/ $ cat /proc/net/tcp
+cat /proc/net/tcp
+  sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode
+
+   0: 00000000:138A 00000000:0000 0A 00000000:00000000 00:00000000 00000000  1001        0 9375 1 00
+000000 100 0 0 10 -1
+   1: 0100007F:1B1B 00000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 7217 1 00
+000000 100 0 0 10 -1
+
+Nov 26, 2012
+#1 skycolo...@gmail.com
+
+#define AID_ROOT             0  /* traditional unix root user */
+
+Nov 26, 2012
+#2 skycolo...@gmail.com
+
+#define AID_RADIO         1001  /* telephony subsystem, RIL */
+
+Nov 26, 2012
+#3 skycolo...@gmail.com
+
+UID 0 corresponds to the "root" user. But how to know which app is exactly listening on the loopback port? Or what is the PID of this root user?
+
+Nov 26, 2012
+#4 skycolo...@gmail.com
+
+another CTS fail:
+[1]cts-tf > run cts --class android.security.cts.ListeningPortsTest -m testNoRemotelyAccessibleListeningTcpPorts.
+-----------------------------------------
+junit.framework.AssertionFailedError: Found port listening on addr=0.0.0.0, port=5002, UID=1001 in /proc/net/tcp 
+-----------------------------------------
+[2]=> adb shell
+shell@android:/ $ cat /proc/net/tcp
+cat /proc/net/tcp
+  sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode
+
+   0: 00000000:138A 00000000:0000 0A 00000000:00000000 00:00000000 00000000  1001        0 9375 1 00
+000000 100 0 0 10 -1
+   1: 0100007F:1B1B 00000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 7217 1 00
+000000 100 0 0 10 -1
+
+Nov 26, 2012
+#5 skycolo...@gmail.com
+
+UID 1001 corresponds to the "RADIO" user. But how to know which app is exactly listening on the 0.0.0.0 port? Or what is the PID of this "RADIO" user?
+
+Nov 26, 2012
+Project Member #6 n...@google.com
+
+Usually there's only one radio process running.  A "adb shell ps | grep radio" will tell you what the radio's PID is.
+
+Alternatively, since you have the inode number, you can look through /proc/*/fd/ to map the inode to PID. In the root example in comment 4, the inode is 7217.  So you'd do something like this:
+
+adb root
+adb shell ls -l /proc/*/fd | grep 7217
+
+Closing this bug, as this isn't a problem on Nexus devices.  You should fix this bug as it probably has security implications. 
+

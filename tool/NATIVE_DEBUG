@@ -1,0 +1,7 @@
+arm-eabi-addr2line -C -f -e *.so address
+
+
+adb logcat | ndk-stack -sym *.so
+
+
+ python parse_stack.py <asm-file> <logcat-file>

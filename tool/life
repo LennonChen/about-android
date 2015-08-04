@@ -1,0 +1,9 @@
+显示器：
+xrandr --output DVI-0 --auto --right-of VGA-0
+
+java：
+解压.class: jar -xvf classes.jar shy/luo/providers/articles/Articles.class
+打包.class: jar -cvf ArticlesProvider.jar ./shy
+
+// 
+ldconfig -p | grep python

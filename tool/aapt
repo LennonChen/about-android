@@ -1,0 +1,1 @@
+ aapt p -f -m -J mygen/ -S res/ -I ~/tool/android-sdk-linux/platforms/android-17/android.jar -M AndroidManifest.xml

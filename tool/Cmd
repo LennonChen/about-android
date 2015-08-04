@@ -1,0 +1,1061 @@
+git remote -v
+git remote add pis ssh://git@git.mioffice.cn/mionew0/android/platform/frameworks/native
+
+git push ssh://liminghao@git.xiaomi.com:29418/miui/bootable/recovery kk:远程分支名（比如l-alpha）
+
+1. Build kernel
+
+如果更改了device tree，需要先 rm out/target/product/msm8994/dt.img 然后make kernel –j8，因为如果不rm dt.img，device tree不会被更新 make的方法也变了，make kernel而不是make bootimage。因为后者不是signed kernel.前者可
+
+2. Build aboot
+
+Make aboot 以后需要make gensecimage_target -j16 因为需要sign一下aboot 
+
+rm -rf ~/.beyondcompare
+
+jarsigner -verify -verbose -certs Superuser.apk
+
+#include "android/log.h"
+__android_log_print(5, "lmh", "line=%d", __LINE__);
+
+make_ext4fs -s -S out/target/product/pisces/root/file_contexts -l 268435456 -a storage out/target/product/pisces/storage.img out/target/product/pisces/storage
+simg2img out/target/product/pisces/storage.img out/target/product/pisces/unsparse_storage.img
+e2fsck -f -n out/target/product/pisces/unsparse_storage.img
+
+查看进程切换trace
+enable schedule switch tracing:
+echo 1 > /d/tracing/events/sched/sched_switch/enable
+disable schedule switch tracing:
+echo 0 > /d/tracing/events/sched/sched_switch/enable
+get tracing log:
+cat /d/tracing/trace
+
+
+HM-LOG: *#*#13411#*#*
+update secure set value=1 where _id=46;
+persist.service.adb.enable 打开adb
+我们mmm external/sepolicy，得到sepolicy文件。
+将其push到/data/security/current/sepolicy目录下
+接着调用setprop selinux.reload_policy 1，使得init重新加载sepolicy，由于/data目录下有了sepolicy，所以它将使用这个新的。
+
+pm list packages -f | grep vending
+// 查看进程占用的端口号
+busybox netstat -apn
+
+mount -o loop -t iso9660 /home/sunky/mydisk.iso /mnt/vcdrom
+
+mount -wo remount rootfs / 
+tcpdump -i any -p -s 0 -w /sdcard/netCapture.pcap
+
+hg clone https://code.google.com/p/ipv6-hosts/
+
+4. 执行：make USE_MINGW=y adb
+5. 执行：make USE_MINGW=y fastboot
+
+Android Cts knwonfailures.txt
+http://androidxref.com/4.4_r1/xref/cts/tests/expectations/knownfailures.txt
+
+ota -i /sdcard/update.zip /cache/ota_update.log 1 stdout
+setprop selinux.reload_policy 1
+makeup
+kk-3
+repo init -u gitdaemon@git.xiaomi.com:mionew0/platform/manifest -b bsp -m cancro-kk-miui.xml
+
+make target-files-package
+./build/tools/releasetools/ota_from_target_files -i ~/armani-target_files-eng.liminghao01.zip ~/armani-target_files-eng.liminghao.zip ota.zip
+完整包:
+./build/tools/releasetools/ota_from_target_files -n out/target/product/cancro/obj/PACKAGING/target_files_intermediates/cancro-target_files-eng.liminghao.zip ota.zip
+
+
+mount -o remount,passwd=*#*#MiPhone#*#* -t debugfs debugfs
+
+mdb shell am start com.android.settings/.MiuiSettings
+mdb shell am startservice com.google.android.inputmethod.pinyin/.PinyinIME
+adb shell am start com.jingdong.app.mall/com.jingdong.common.phonecharge.calendar.AlamrActivity
+
+M3-W: *#*#717717#*#*
+
+gerrit: git push origin HEAD:refs/for/master 
+
+eclipse mat: http://download.eclipse.org/mat/1.2/update-site/
+
+curl http://commondatastorage.googleapis.com/git-repo-downloads/repo > ~/bin/repo chmod a+x ~/bin/repo
+
+hierarchyviewer
+命令启动Activity: adb shell am start air.com.tencent.qqpasture/com.tencent.air.extensions.push.PushActivity
+
+## Google手机版本
+https://developers.google.com/android/nexus/images
+
+https://developers.google.com/android/nexus/images
+adb logcat -v threadtime 2>&1 | tee log.txt
+
+ ssh git@git.mioffice.cn
+
+搞掉图形密码：rm -r /data/data/com.android.provider.settings
+
+java –jar chkbugreport.jar bugreport.txt
+
+adb shell monkey -v --throttle 200 -p com.androidesk 200000
+
+抓单个APP堆栈：adb shell kill -s SIGQUIT
+
+zip -r filename.zip file1 file2 file3 /usr/work/school 
+zip -r wt98007.zip *.bin EBR* *.img *.ini *.txt MBR kernel
+
+AOSP--master
+export https_proxy=https://p.pt.xiaomi.com:3128
+export http_proxy=http://p.pt.xiaomi.com:3128
+repo init -u https://android.googlesource.com/platform/manifest
+
+
+PC IP配置
+ip:192.168.104.132
+mask:255.255.248.0
+gateway:192.168.104.1
+mac:18:03:73:B4:5E:19
+dns:10.237.120.2
+ git checkout -b for-upload -t m/jellybean
+adb logcat -c && adb logcat | grep "ActivityManager" > 2.txt
+
+APK 签名网站: http://sign.n.miui.com/
+
+1. X6的repo相关信息
+
+http://wiki.n.miui.com/display/miuinfra/X6
+
+2. 系统项目的功能列表(v6)
+
+http://wiki.n.miui.com/pages/viewpage.action?pageId=5178668
+
+把M2JB上提交Merged的代码拿到新创建的分支M3-JB上的方法
+cd mithree-jb
+git checkout -b for-upload -t m/jellybean
+git cherry-pick d559c2cf80890c71530b7a20fca731fbf9cae546(在M2-jb分支上的ID)
+git fetch ssh://liminghao@git.xiaomi.com:29418/platform/frameworks/base refs/changes/47/31347/6 && git cherry-pick FETCH_HEAD
+cd mitwo-alpha
+git rebase m/jellybean
+直接repo upload .
+
+Patch-tool: repo init -u gitdaemon@git.xiaomi.com:libra2/platform/manifest.git -b porting-jellybean --repo-url=gitdaemon@git.xiaomi.com:aosp/tools/repo.git
+
+设有两机，均为局域网，两机可相互通信无问题，中间无防火墙。
+两机IP分别为：A:192.168.1.240 B:192.168.1.102
+假设A，B机的SSH都允许root登录
+
+设要把 A上的 /root/abc.zip 传到 B机并放到/abc目录，可以在A机上用命令
+    scp  /root/abc.zip  root@192.168.1.102:/abc/
+若 SSH端口不是默认的22，比如，是端口1234 则加-P参数：
+    scp  -P 1234 /root/abc.zip  root@192.168.1.102:/abc/
+
+也可以在B机上用命令：
+    scp  root@192.168.1.240:/root/abc.zip  /abc/ 
+
+下面给出一个例子，希望你看得懂：
+HM-WCDMA
+repo init -u gitdaemon@git.xiaomi.com:libra2/platform/manifest.git -b jellybean -m redmi_jb2_w.xml --repo-url=gitdaemon@git.xiaomi.com:aosp/tools/repo.git
+
+红米稳定版
+repo init -u gitdaemon@git.xiaomi.com:libra2/platform/manifest.git -b jellybean -m redmi_jb2_stable.xml
+
+红米2原厂代码的REPO地址如下：
+
+repo init -u gitdaemon@git.xiaomi.com:libra2/platform/manifest.git -b jellybean -m alps_jb2.xml --repo-url=gitdaemon@git.xiaomi.com:aosp/tools/repo.git
+
+红米2的分支已经建好了。
+1、REPO地址：
+repo init -u gitdaemon@git.xiaomi.com:libra2/platform/manifest.git -b jellybean -m redmi_jb2.xml --repo-url=gitdaemon@git.xiaomi.com:aosp/tools/repo.git
+
+mi3_w
+repo init -u gitdaemon@git.xiaomi.com:libra2/platform/manifest -b jellybean -m cancro-jb.xml --repo-url=gitdaemon@git.xiaomi.com:aosp/tools/repo.git
+mi3-w-native
+repo init -u ssh://gitdaemon@git.xiaomi.com/mionew0/platform/manifest -b cancro -m cancro-jb-miui.xml
+
+2、基于M2开发版
+framework下的webkit 没有合并
+
+需要移植APP：
+    Browser
+    MiuiCamera
+    MiuiGallery中的AirkanPhoneService部分
+    MiuiVideoPlayer
+    MiuiSystemUI(需支持双卡双待)
+    Phone
+
+3、编译方法：
+1）编译完整项目：
+    ./mediatek/build/mk -t wt93007/wt98007 new
+
+2）增量编译：
+    ./mediatek/build/mk -t wt93007/wt98007 remake
+    ./mediatek/build/mk -t wt93007/wt98007 remake
+
+3 ）编译systemimage:
+    ./mediatek/build/mk -t wt93007/wt98007 systemimage
+
+4）编译module:
+   ./mediatek/build/mk -t wt93007/wt98007 r dr <module_name>
+
+使用mm
+
+./makeMtk -t wt98007 mm packages/apps/Phone/
+
+更多的编译信息： ./mediatek/build/mk
+
+
+[root@localhost ~]# pwd
+/root
+[root@localhost ~]# ls
+anaconda-ks.cfg  ftpaccount   install.log.syslog
+backup.tar.gz    install.log  svn1.4.3
+[root@localhost ~]# scp backup.tar.gz root@192.168.1.21:/tmp/
+The authenticity of host '192.168.1.21 (192.168.1.21)' can't be established.
+RSA key fingerprint is 4d:b4:e1:5b:80:8f:ea:df:0a:eb:dd:30:e7:00:07:90.
+Are you sure you want to continue connecting (yes/no)? yes
+Warning: Permanently added '192.168.1.21' (RSA) to the list of known hosts.
+root@192.168.1.21's password:  << 提示输入192.168.1.21的SSH密码
+backup.tar.gz                                 100% 5120KB   1.3MB/s   00:04
+[root@localhost ~]#
+
+AOSP 4.3
+repo init -u gitdaemon@git.xiaomi.com:aosp/platform/manifest.git -b android-4.3_r2.1 --repo-url=gitdaemon@git.xiaomi.com:aosp/tools/repo.git
+
+AOSP 4.4.2
+repo init -u gitdaemon@git.xiaomi.com:aosp/platform/manifest.git -b android-4.4.2_r2 --repo-url=gitdaemon@git.xiaomi.com:aosp/tools/repo.git
+
+AOSP 4.2
+repo init -u ssh://gitdaemon@git.xiaomi.com/libra2/platform/manifest.git -b jellybean -m android-4.2.2_r1.xml
+
+M3
+repo init -u gitdaemon@git.xiaomi.com:libra2/platform/manifest.git -b jellybean -m pisces-jb.xml --repo-url=gitdaemon@git.xiaomi.com:aosp/tools/repo.git
+M3-Native
+repo init -u ssh://gitdaemon@git.xiaomi.com/mionew0/platform/manifest -b pisces -m secureos/pisces-jb-miui.xml
+小米手机版本
+mkdir mione
+cd mione
+repo init -u gitdaemon@git.xiaomi.com:libra2/platform/manifest.git -b testing
+repo init -u gitdaemon@git.xiaomi.com:libra2/platform/manifest.git -b apps
+repo init -u gitdaemon@git.xiaomi.com:libra2/platform/manifest.git -b gingerbread --repo-url=gitdaemon@git.xiaomi.com:aosp/tools/repo.git
+
+repo init -u gitdaemon@git.xiaomi.com:libra2/platform/manifest.git -b gingerbread -m mione.xml
+如果是其它机型就加上 -m mione.xml/defy.xml/milestone.xml
+
+repo init -u gitdaemon@git.xiaomi.com:libra2/platform/manifest.git -b ics
+
+android 原生ICS代码
+repo init -u gitdaemon@git.xiaomi.com:aosp/platform/manifest.git -b ics
+
+Google jellybean 4.1版本
+repo init -u gitdaemon@git.xiaomi.com:aosp/platform/manifest.git -b jellybean --repo-url=gitdaemon@git.xiaomi.com:aosp/tools/repo.git
+
+Google jellybean 4.2版本
+repo init -u gitdaemon@git.xiaomi.com:libra2/platform/manifest.git -b jellybean -m android-4.2_r1.xml --repo-url=gitdaemon@git.xiaomi.com:aosp/tools/repo.git
+
+M3 Native
+repo init -u ssh://gitdaemon@git.xiaomi.com/mionew0/platform/manifest -b pisces -m secureos/pisces-jb.xml
+
+小米手机4.0版
+repo init -u gitdaemon@git.xiaomi.com:libra2/platform/manifest.git -b ics -m mione-ics.xml
+
+Google的repo连接有问题，可以用如下方法解决
+repo init -u ... --repo-url=gitdaemon@git.xiaomi.com:aosp/tools/repo.git
+
+MiTwo JellyBean source
+repo init -u gitdaemon@git.xiaomi.com:libra2/platform/manifest.git -b jellybean -m aries.xml --repo-url=gitdaemon@git.xiaomi.com:aosp/tools/repo.git
+
+Galaxy Nexus jellybean alpha initial
+repo init -u gitdaemon@git.xiaomi.com:libra2/platform/manifest.git -b jellybean -m default-alpha.xml --repo-url=gitdaemon@git.xiaomi.com:aosp/tools/repo.git
+
+MIUI JB 4.1版本
+repo init -u gitdaemon@git.xiaomi.com:libra2/platform/manifest.git -b jellybean --repo-url=gitdaemon@git.xiaomi.com:aosp/tools/repo.git
+
+MI TWO ALPHA
+repo init -u ssh://gitdaemon@git.xiaomi.com/libra2/platform/manifest.git -b jellybean -m aries-jb-alpha.xml
+
+patchrom 分支
+2.3
+repo init -u gitdaemon@git.xiaomi.com:libra2/platform/manifest.git -b porting-gb --repo-url=gitdaemon@git.xiaomi.com:aosp/tools/repo.git
+
+ics
+repo init -u gitdaemon@git.xiaomi.com:libra2/platform/manifest.git -b porting-ics --repo-url=gitdaemon@git.xiaomi.com:aosp/tools/repo.git
+
+CM9
+repo init -u gitdaemon@git.xiaomi.com:cm7/android.git -b ics
+
+CM10
+repo init -u gitdaemon@git.xiaomi.com:CyanogenMod/CyanogenMod/android.git -b jb-mirror --repo-url=gitdaemon@git.xiaomi.com:aosp/tools/repo.git
+
+M1的jellybean alpha版本已经建好：
+repo init -u ssh://gitdaemon@git.xiaomi.com/libra2/platform/manifest.git -b jellybean -m mione-jb-alpha.xml
+
+非小米手机的jellybean alpha
+repo init -u gitdaemon@git.xiaomi.com:libra2/platform/manifest.git -b jellybean
+
+CM10 编译教程
+http://forum.xda-developers.com/showthread.php?t=1813924
+
+M1 JB
+repo init -u gitdaemon@git.xiaomi.com:libra2/platform/manifest.git -b jellybean -m mione-jb.xml --repo-url=gitdaemon@git.xiaomi.com:aosp/tools/repo.git
+
+M2 original
+repo init -u ssh://gitdaemon@git.xiaomi.com/mionew0/platform/manifest.git -b aries -m aries-jb.xml
+
+repo init -u ssh://gitdaemon@git.xiaomi.com/mionew0/platform/manifest.git -b aries -m aries-jb-miui.xml 
+
+编译版本
+. build/envsetup.sh 设置环境变量
+lunch full-eng 选择编译版本
+make -j32 编译
+mm -j32 模块编译，需要设置环境变量
+
+google kernel source mirror
+ssh://git@git.xiaomi.com/aosp/kernel/msm
+ssh://git@git.xiaomi.com/aosp/kernel/samsung
+ssh://git@git.xiaomi.com/aosp/kernel/tegra
+ssh://git@git.xiaomi.com/aosp/kernel/omap
+ssh://git@git.xiaomi.com/aosp/kernel/exynos
+
+将手机USB加入访问规则
+http://files.xiaomi.com/xmg/%E9%85%8D%E7%BD%AEUSB%E8%AE%BE%E5%A4%87
+1.lsusb 查看现有列表
+2.插入手机
+3.lsusb 查看更新后的列表，找到手机对应的USB信息
+4.sudo gedit /etc/udev/rules.d/99-android.rules 
+  从以前的记录中新加入一行
+  将ID中冒号前的数值写入idVendor == 后边面的字串；
+  将ID中冒号后的数值写入idProduct == 后面的子窜
+  保存文档退出
+5.sudo restart udev
+  adb kill-server
+  拔掉USB设备，并重新插上
+6.adb devices 查看是否正确识别了数据
+
+7.cat /etc/udev/rules.d/51-android.rules
+SUBSYSTEM=="usb", MODE="0666"
+
+APP推送到手机
+adb push out/target/product/mione_plus/system/app/Monitor.apk /system/app
+
+lint 命令：
+lint --html /tmp/report.html --disable MissingTranslation  DeskClock
+--------------------------------------GDB 调试-----------------------------------------------------------------------------------
+1. . build/envsetup.sh
+2. lunch 31
+   adb root
+3. gdbclient app_process :5309 flipboard.cn  flipboard.cn为进程名，或写进程号也行，5309为端口号,
+info b 查看当前断点
+b 在当前行设置断点
+d 1 删除1号断点
+c 继续程序执行
+bt 查看调用栈
+condition 1 n >= 3520016 断点条件
+where 查看调用栈
+
+--------------------------------------MI TWO JB-----------------------------------------------------------------------------------
+获取代码：
+repo init -u gitdaemon@git.xiaomi.com:libra2/platform/manifest.git -b jellybean -m aries.xml --repo-url=gitdaemon@git.xiaomi.com:aosp/tools/repo.git
+
+编译:
+. build/envsetup.sh
+lunch aries-userdebug
+make otapackage
+
+刷机：
+sudo fastboot flash tz tz.mbn
+sudo fastboot flash sbl2 sbl2.mbn
+sudo fastboot flash rpm rpm.mbn
+sudo fastboot flash modem NON-HLOS.bin
+sudo fastboot flash sbl3 sbl3.mbn
+sudo fastboot flash sbl1 sbl1.mbn
+sudo fastboot flash boot boot.img
+sudo fastboot flash aboot emmc_appsboot.mbn
+sudo fastboot flash system system.img
+sudo fastboot flash recovery recovery.img
+sudo fastboot reboot
+
+第一次需要刷userdata:
+sudo fastboot flash userdata userdata.img
+
+--------------------------------------MI TWO USB链接-------------------------------------------------------------
+从今天的build开始，M2的USB Vendor ID将使用小米自己的ID 0x2717
+由此造成的影响是，所有的adb，默认不识别这个ID，需要大家手动做如下改动：
+
+1. 建立 ${HOME}/.android/adb_usb.ini 文件，文件内容就是 0x2717
+Linux和Mac下:
+   mkdir ~/.android
+   echo "0x2717" > ~/.android/adb_usb.ini
+WIndows下
+  c:
+  cd "c:\Documents and Settings\Administrator"
+  mkdir .android
+  echo 0x2717 > .android/adb_usb.ini
+
+2. 重启adb server
+ adb kill-server
+ adb start-server
+
+----------PatchRom-------------------------------------------------------------
+https://github.com/MiCode/PatchRom
+对应的micode论坛讨论区是： http://micode.net/forum-55-1.html
+
+我已经checkin 两个文件， NOTICE是license， README是自描述文件, 各位可以更新README让描述的更清楚。
+
+
+
+建立git的方法：
+Global setup（如果设置过，就不用设置了，跳过这步）:
+Set up git (http://help.github.com/linux-set-up-git/)
+git config --global user.name "刘新宇"(your name)
+git config --global user.email youremail
+
+Next steps:
+mkdir PatchRom
+cd PatchRom
+git init 
+git remote add origin git@github.com:MiCode/PatchRom.git
+
+以后读取代码：
+git pull
+
+以后发送代码：
+git push -u origin master
+
+注意：一般用户没有权限的，不能这样发送代码，只能发起pull request， 由各位code review后再merge进master branch
+
+增加SSH key
+ssh-add ~/.ssh/key_backup/id_rsa
+
+将当前的最新修改push到origin 项目的master分支
+git push origin HEAD:master
+--------------------------------------------------------------------------------------------
+在/path/to/your/patchrom/manifest/default.xml 加入新机型路径，再提交远程版本库merge。此后其他的本地版本库就可以repo sync/upload 新项目。
+--------------------------------一键升级底包---------------------------------------------------------------
+
+With the new diff (tools/git_smali_diff) , we can get and apply patch within Git for Patchrom project.
+And the following steps are used for switching to a new ROM.
+ 
+To get all changes(i.e, the patch file) currently we have based on the old ROM (stockroom.zip):
+git checkout -b temp-branch                ( Use a branch to hide all changes by the next steps)
+touch stockroom.zip                                ( To ensure all components, jars and modified apps, are extracted in the next step)
+make -e showcommand=true workspace
+git status | grep modified | cut -c15- | xargs git add 只添加修改的文件
+git status | grep deleted: | cut -c15- | xargs git checkout 回复删除的文件
+
+git commit -m "commit for revert"
+git revert --no-edit HEAD                       ( The changes we have done based on the old ROM are this commit now)
+git.patch HEAD^..HEAD > patch.file   ( Git will just take care the files that are really changed, so it is pretty faster )
+ 
+ 
+To apply the patch file to a new ROM:
+git checkout -b new_branch
+tools/releasetools/ota_target_from_phone -r  ( Get the new stockroom.zip, and need to deodex if required)
+make -e showcommand=true workspace             ( Prepare workspace for new ROM)
+git.apply patch.file
+// manully merge the rejected files and all other binary files
+
+---------------------------------------Patch method-------------------------------------------------------------
+
+我们现在的build流程基本不支持修改MIUI的代码，一般都去要求MIUI相关代码那边加config，如果非要修改，又不适合加config，建议替换整个function（当然最好能说服MIUI代码里面把需要替换的部分写成一个function）。这样的好处是只要源代码那边不修改这个function，我们的patch就一直有效，而且肯定能patch正确。
+ 
+举一个例子:
+9300需要图库截锁屏图片为1280x1280，而不是屏幕width x height, 让图库专门写个getLockScreenDisplayMetrics() 做这个，然后我们就可以根据我们需求修改这个function了。修改的时候不用写smali代码，直接修改源代码用replace_smali_method.sh生产smali patch，Step（以图库为例）如下：
+1）修改图库源代码(不要提交，只build), 然后再机型目录下make MiuiGallery.apk.sign（当然还要在makefile里面加入：local-miui-modified-apps := …. MiuiGallery）
+2）replace_smali_method.sh  patch  CropImage (文件名)  getLockScreenDisplayMetrics(function名)
+这步会产生CropImage.smali.method文件，以后每次make MiuiGallery.apk.sign就会自动patch到smali文件。
+
+------------------------------------------PATCHROM 本地OTA--------------------------------------------------
+现在一些好的机型build出来的zipfile越来越大，build时间也越来越长，所以做了一些优化。
+
+0) 需要在makefile指定存放目录，如：local-previous-target-dir := ~/workspace/ota_base/gnote
+
+1) make zipfile 
+第一次build还是和原来一样，不要make clean，以后每次build，仅build改动过的，比如修改了framework.jar.out下的一个smali文件，make zipfile仅build framwork.jar，当然最后一步的build_target_files.sh还会执行（这个时间也挺长，需要进一步优化）
+
+2) local-ota
+建立一个本地OTA，这样每次不用flash整个zipfile，只需要ota即可。几个相关命令如下：
+a) make zipfile-ota-base  
+b) make zipfile-and-ota   需要usb连接手机，保证adb能用，build出ota包，然后直接刷ota即可。
+   make -e otabase=wangwei_b.20120911.170645 zipfile-and-ota
+
+c) make ota-base-restore 刷zipfile或者loca-ota后，如果debug的时候改变过jar或者其他app，ota会失败，使用此命令恢复即可。
+------------------------------------------小米 本地OTA--------------------------------------------------
+1. make otapackage -j8
+2. 备份out/target/product/aries/obj/PACKAGING/target_files_intermediates/下的target file，例如：targetfile1.zip
+3. 做一些修改。
+4. make otapackage -j8
+5. 备份out/target/product/aries/obj/PACKAGING/target_files_intermediates/下的target file，例如：targetfile2.zip
+6. croot
+7. build/tools/releasetools/ota_from_target_files -i targetfile1.zip targetfile2.zip ota1.zip
+--------------------------------小米手机制作OTA方法----------------------------------------------
+基本步骤:
+(1) make fullota ，保存out目录下的target_files.zip， 假定为last_target_files.zip
+(2) 做了一些修改，再次make fullota，out目录下生成一个新的target_files.zip
+(3) tools/releasetools/ota_from_target_files -k ../build/security/testkey -i last_target_files.zip
+out/target_files.zip ota_upate.zip
+-k 指定签名的key
+-i 指定上次的target_files
+out/target_files.zip 新的target_files
+ota_update.zip 指定生成的OTA包文件名
+-------------------------------------缓存工作区的方法-------------------------------------------------------
+git branch temp 创建新的分支
+git check temp
+git stash 缓存修改
+git check for-upload 切换到新的工作区继续工作
+git check temp
+git stash pop 使用几次pop自己应该清楚
+git stash clear 清空Git栈
+参考网站
+http://www.cppblog.com/deercoder/archive/2011/11/13/160007.html
+--------------------------------------------------------------------------------------------
+
+编译framework和services的脚本，注意make services之前必须先编译framework
+cd root
+make framework -j8
+make services -j8
+
+adb push out/target/product/mione_plus/system/framework/framework.jar /system/framework/
+adb push out/target/product/mione_plus/system/framework/framework-res.apk /system/framework/
+
+adb push out/target/product/mione_plus/system/framework/core.jar /system/framework/
+adb push out/target/product/mione_plus/system/framework/services.jar /system/framework/
+
+adb shell stop
+adb shell start
+--------------------------------------------------------------------------------------
+adb logcat CallTrace:S ADB过滤掉CallTrace信息
+adb logcat > D:/Temp/1.txt 将ADB输出到文件
+# logcat --help
+Usage: logcat [options] [filterspecs]
+options include:
+-s Set default filter to silent.
+Like specifying filterspec '*:s'
+-f <filename> Log to file. Default to stdout
+-r [<kbytes>] Rotate log every kbytes. (16 if unspecified). Requires -f
+-n <count> Sets max number of rotated logs to <count>, default 4
+-v <format> Sets the log print format, where <format> is one of:
+
+brief process tag thread raw time threadtime long
+
+-c clear (flush) the entire log and exit
+-d dump the log and then exit (don't block)
+-t <count> print only the most recent <count> lines (implies -d)
+-g get the size of the log's ring buffer and exit
+-b <buffer> request alternate ring buffer
+('main' (default), 'radio', 'events')
+-K enable dmesg in logcat
+-B output the log in binary
+filterspecs are a series of
+<tag>[:priority]
+
+where <tag> is a log component tag (or * for all) and priority is:
+V Verbose
+D Debug
+I Info
+W Warn
+E Error
+F Fatal
+S Silent (supress all output)
+
+'*' means '*:d' and <tag> by itself means <tag>:v
+
+If not specified on the commandline, filterspec is set from ANDROID_LOG_TAGS.
+If no filterspec is found, filter defaults to '*:I'
+
+If not specified with -v, format is set from ANDROID_PRINTF_LOG
+or defaults to "brief"
+
+编译系统rom
+make systemimage -j8
+
+刷机的命令
+    adb reboot bootloader
+    cd out/target/product/mione_plus/
+    fastboot flash system system.img   # system.img.ext4 for MiOne
+    fastboot flash boot boot.img 	
+    fastboot reboot
+
+    刷新小米1分区系统
+    fastboot flash system1 system.img   # system.img.ext4 for MiOne
+    fastboot flash boot1 boot.img 	
+**如果提示no permissions	fastboot，则是ubuntu没有配置正确，默认情况下没有给usb访问开权限
+sudo /etc/udev/rules.d/51-android.rules，在其中增加
+SUBSYSTEM=="usb", MODE="0666"
+具体说明参见http://source.android.com/source/initializing.html
+
+fastboot erase userdata
+fastboot erase cache
+-----------------------------------------------------------------------------
+2.push 软件时提示Read-only file system错误的处理：
+  A。检查手机是否在访问列表中具体参见
+     http://files.xiaomi.com/xmg/%E9%85%8D%E7%BD%AEUSB%E8%AE%BE%E5%A4%87
+  B。检查是否是root权限，即adb shell后是否为"#"，如没有使用adb root 获得root权限
+  C。adb shell后，ls，如果有问题使用adb remount重新挂在系统
+
+android的工具目录加入环境变量
+export PATH=$PATH:~/android-sdk/tools:~/android-sdk/platform-tools
+
+adb shell stop;adb shell start shell重启，主要应用与framework改了以后。对于资源或库修改，必须重启整个机器
+
+----生成sshkey----
+ssh-keygen 生成sshkey
+cp  ~/.ssh/id_rsa.pub ~/Desktop/your_name.pub
+然后把桌面上的your_name.pub贴到附件里面
+请注意your_name是你的小米邮件名
+
+
+LINUX命令
+history 查看命令行操作历史
+rm -rf .config .gconf 在home目录下执行该命令，清楚用户原有的配置
+chmod 修改文件或文件夹访问权限，可使用ls -l命令查看
+      具体参考http://linux.chinaunix.net/man/2004-10-05/39.shtml
+
+mount -o remount,rw /dev/block/mmcblk1p21
+find . * | grep -r "image_text_button" 查找某个目录下含有image_text_button的内容
+grep -r -n ".*editContact_title_insert" . 查找当前目录下含有editContact_title_insert内容的所有文件，并列出行号
+grep --exclude workspace/ 查找是排除特定的目录
+sudo apt-get remove --purge package 完全删除软件
+zip -r qualcomm system 将system目录为qualcomm.zip
+
+
+Eclipse命令
+ctrl+shit+t 打开类
+ctrl+shit+R 打开资源
+ctrl+h 全局搜索
+ctrl+shift+o 自动添加提示
+ctrl+o 搜索函数名
+f2 查看说明
+f3 查看定义
+help菜单中的KeyAssert列出常用的键
+
+设置Android调试的方法
+1.选中工程
+2.Run->Debug Configurations
+3.Remote Java Application,取一个name，port 8700，选择Debug
+4.链接手机USB，注意这里调试端口不能够被被人抢占
+5.Window->Show View->Other->搜索Devices,Logcat
+6.在Devices需要调试的进程中按F11，在程序相应处打断电
+
+git命令
+0.安装与配置
+在git中配置diffuse, 以后“git diff”就可以自动调用diffuse了。
+
+1) 在 ~/ 创建一个文件 git-diff-wrapper.sh
+diffuse "$2" "$5" | cat
+
+2） chmod u+x git-diff-wrapper.sh
+
+3) 编辑 ~/.gitconfig ， 添加以下内容
+[diff]
+        external = ~/git-diff-wrapper.sh
+[difftool]
+        prompt = false
+
+1.git init 初始化git
+2.git add <file> 添加文件/将修改文件添加到缓存区,注意不是版本库
+  git add -p 进入patch模式，显示不同
+3.git commit -m "注释" -a 提交全部修改文件 提交代码
+4.git status --查看当前的文件修改状态
+  git diff --找出工作目录中文件是如何修改的
+  git diff --cached --比较暂存区和版本库中的区别、
+  git HEAD 比较工作区（包括暂存和为暂存的修改）与版本库中的差别
+5.git log -数字 显示提交记录
+6.git checkout 切换分支、
+7.git branch  创建分支
+  git branch -d <branch> 删除分支，注这里只是删除分支的名字，分支的标签不删除
+8.git tag <table> <branch> 给分支打标签
+9.git tag 查看分支
+10.git rebase <branch>变换基线，一种更精准的分支合并方式
+rebase一般的模式：
+# 合并b
+git rebase b
+# 处理完冲突继续合并
+git rebase --continue
+# 跳过
+git rebase --skip
+# 取消合并
+git rebase --abort
+11.git archive --format=tar --prefix=<name> | gzip > <name>.tar.gz
+   git archive --format=zip --prefix=<name> > <name>.zip
+12.git pull tzc@192.168.0.5:~/work/m2ge 将本地git库与远程库合并
+13.git blame -L <begin line,end line><file> 
+   查看文件中制定代码块的修改实现，修改人，历史哈希值
+14.git log --pretty=oneline 查看git log完整记录
+
+Git的一般工作模式：
+$ git clone lyr@192.168.0.7:~/work/m2ge
+... 项目开发 ...
+$ git add 改动的文件
+$ git commit
+$ git pull
+... 解决版本合并问题 ...
+$ git push
+
+rebase一般的模式：
+# 合并b
+git rebase b
+# 处理完冲突继续合并
+git rebase --continue
+# 跳过
+git rebase --skip
+# 取消合并
+git rebase --abort
+
+git checkout -- . 回退本目录所有修改
+repo status可以查看整个目录的修改情况
+
+完全回退本地1次修改
+git reset --soft HEAD~1 去除git log，
+git reset HEAD 将其从git缓存中取出
+git checkout 从分支上取出，彻底回退本地修改
+
+git diff --cached add修改后查看修改的地方方法
+
+----------------git patch-----------------------------
+With the new diff (tools/git_smali_diff) , we can get and apply patch within Git for Patchrom project.
+And the following steps are used for switching to a new ROM.
+ 
+To get all changes(i.e, the patch file) currently we have based on the old ROM (stockroom.zip):
+git checkout –b temp-branch                ( Use a branch to hide all changes by the next steps)
+touch stockroom.zip                                ( To ensure all components, jars and modified apps, are extracted in the next step)
+make -e showcommand=true workspace
+git commit –m “commit for revert”
+git revert --no-edit HEAD                       ( The changes we have done based on the old ROM are this commit now)
+git.patch HEAD^..HEAD > patch.file   ( Git will just take care the files that are really changed, so it is pretty faster )
+ 
+ 
+To apply the patch file to a new ROM:
+git checkout –b new_branch
+tools/releasetools/ota_target_from_phone –r  ( Get the new stockroom.zip, and need to deodex if required)
+make -e showcommand=true workspace             ( Prepare workspace for new ROM)
+git.apply patch.file
+// manully merge the rejected files and all other binary files
+
+作用和使用方法git自带的一样，但是会过滤掉.line 等干扰代码，方便我们diff和patch
+如果要把某个地方的修改apply到另一个地方：
+Step1: git.patch commit_start commit_end > patch.file (under where you want to get the patch)
+Step2: git.apply patch.file        (under where you want to apply the patch)
+二进制文件暂不支持，但是会提醒
+
+
+---------------------Using ccache-------------------------------
+ccache is a compiler cache for C and C++ that can help make builds faster. In the root of the source tree, do the following:
+
+
+$ export USE_CCACHE=1
+$ export CCACHE_DIR=/<path_of_your_choice>/.ccache
+$ prebuilt/linux-x86/ccache/ccache -M 20G
+
+You can watch ccache being used by doing the following:
+
+
+$ watch -n1 -d prebuilt/linux-x86/ccache/ccache -s
+-----------------------------------------------------------------
+
+小米的git工作流程
+1.在工作目录创建分支
+git branch --track for-upload m/testing
+git branch --track for-upload m/porting-gb
+注：--track表示跟踪远程分支，for-upload表示本地分支的名字，m/testing表示跟踪的远程分支名字，m表示远程，/testing远程分支的名字
+git reflog 查看所有的修改
+git merge 将其中某项修改何如当前分支
+2.git checkout for-upload 切换分支
+3.git status 查看分支状态
+4.git add . 将修改文件告知git
+5.git status 查看修改
+6.git commit -m "change text size of sms popup" 本地提交修改
+git commit --amend 修改最后一次提交的信息以及相关的代码
+git commit -C 修改某个change的注释
+7.repo upload .
+
+当repo sync遇到如下错误：
+error: packages/apps/Launcher2/: branch for-upload is published (but not merged) and is now 2 commits behind
+1.使用git reflog确认本地修改是否需要合入远程分支
+如果不需要，则使用git rebase m/testing同步远程修改。
+如果需要，则使用git merge将相应修改合入本地分支
+
+ssh gitdaemon@git.xiaomi.com
+
+更改git commit 文本编辑器 
+git config --global core.editor gedit
+
+git提示如下错误
+error: insufficient permission for adding an object to repository database /home/wangwei_b/testing/.repo/projects/frameworks/miui.git/objects
+
+原因：
+因为有其他用户（例如root）操作了该目录导致的
+
+改正：
+cd testing/.repo/projects
+sudo chown wangwei_b:wangwei_b * -R
+
+远程服务器上加了一个projects，同步到本地的过程：
+1.修改testing/.repo/manifest.xml
+2.增加<project path="packages/apps/SideKick" name="platform/packages/apps/SideKick" remote="libra" revision="testing" />
+3.repo sync
+
+commit format
+------------------------------------------
+Line 1：Commit的简单描述，不得超过80个字符
+Line 2：空行 
+Line 3：JIRA-ID或者N/A。如果是bug fix，必须加上JIRA-ID，否则写N/A，严格区分大小写。
+Line 4：空行
+Line 5：Commit的详细描述，可选 
+Line 6：Singed-off信息，用git commit -s来生成
+-------------------------------------------------
+Line 1：Commit Message Sample
+Line 2：
+Line 3：N/A
+Line 4：
+Line 5：This is a sample of xiaomi commit message. Please follow this.
+Line 6：Signed-off-by: Gary Hua <garyhua@xiaomi.com>
+
+@@@----机型移植----@@@
+如果机器上的系统是odex的，则需要将odex文件转换为dex，而后重新打包(jar/apk)。最后重新push回相应的目录(/system/app;/system/framework)
+注意：
+1.文件一定要发到对应的目录，否则需要重新刷底包
+2.adb shell操作手机操作系统提示read-only时，使用adb remount挂在系统即可
+
+具体步骤：
+A。cdroot 
+B。porting/tools/baksmali -x guava.odex  生成java class文件
+C。porting/tools/smali out -o classes.dex 生成dex文件
+D。将classes.dex拖入guava.jar/guava.apk中
+E。删除out目录，classes.dex，guava.odex
+
+注：
+1.如果遇到找不到的类使用
+porting/tools/baksmali -c :com.motorola.android.frameworks.jar -x core-junit.odex 
+其中-c是制定classpath进行合成
+2.如果制定路径后还是找不到使用porting/tools/baksmali -I -x guava.odex 忽略类没定义的错误，
+  此时仍然会报错，但是会生成classes.dex，接着进行C-E步即可
+
+编制i9100的zip包
+1.cd porting/i9100
+2.make reallyclean
+3.make zipfile
+4.make zip2sd
+注：
+1.使用apktool d 反汇编miui的文件如果出现
+Can't find framework resources for package of id: 3. You must install proper framework files, see project website for more info.
+的错误，需要给apktool安装资源文件
+ ./apktool if ~/testing/out/target/product/passion/system/framework/framework-miui-res.apk 
+2.adb shell mount sdcard
+
+patchrom 编译过程：
+1. patchrom/. build/envsetup.sh -a ~/testing -l 3 选定分支,所有的文件将从testing中取
+2.cd defy
+3.make zipfile
+
+查找适配机型上某个资源的ID值：
+aapt d resources framework-res.apk  | grep factorytest_reboot 既可以看到适配机器上factorytest_reboot的ID值
+aapt d resources framework-miui-res.apk 查看所有资源
+
+patchrom 自动生成MIUI修改文件：
+1.patchrom/. build/envsetup.sh -a ~/testing -l 3 -b ~/google237/
+2.cd defy
+3.make release-framework-base-src
+4.在 miui/src/frameworks/base/ 和 android/src/frameworks/base/生成MIUI修改的文件
+
+patchrom 增加项目目录后的操作
+1.在/patchrom/.repo/manifests.xml 增加相应的project
+2.提交/patchrom/.repo/manifests/目录的修改
+3.repo sync
+——————I9100适配————————————————————————————————————————————————————
+1.查看设备的DEVICE信息
+adb shell
+cat /system/build.prop
+其中的ro.product.device=GT-I9100 就是对应代码Build.DEVICE的信息
+
+2.编译9100的framework
+cd porting/i9100
+make .build/framework 
+adb push .build/framework.jar /system/framework
+
+apk文件的脚本：
+for file in *.odex
+do
+	if [ -e $file ]
+	then
+		apkfile=`echo $file | sed -e 's/odex/apk/'`
+		echo "processing $apkfile"
+		../../tools/baksmali -c :bouncycastle.jar -I -x $file || exit 1
+		../../tools/smali out -o classes.dex || exit 1
+		jar uf $apkfile classes.dex
+		rm classes.dex
+		rm -rf out
+		rm $file
+	fi
+done
+
+jar文件的脚本:
+for file in *.odex
+do
+	if [ -e $file ]
+	then
+		apkfile=`echo $file | sed -e 's/odex/jar/'`
+		echo "processing $apkfile"
+		../../tools/baksmali -c :bouncycastle.jar -I -x $file || exit 1
+		../../tools/smali out -o classes.dex || exit 1
+		jar uf $apkfile classes.dex
+		rm classes.dex
+		rm -rf out
+		rm $file
+	fi
+done
+注：可以将所有的依赖文件全部添加到-c :xx.jar后在运行命令
+
+
+3. 参考工作流程
+
+    (1) 为要移植的机型新建一个目录，将该机型的原厂刷机包放入
+
+    (2) 从刷机包中取出framework.jar, android.policy.jar, services.jar, framework-res.apk以及可能新增的资源apk。取出所有的app
+
+    (3) 利用apktool反汇编framework.jar, android.policy.jar和services.jar
+
+    (4) 比较miui和android的反汇编码，找出相应的改动，把这些改动应用到第(3)步的反汇编文件中。一定要注意不能简单拷贝，要弄懂我们的改动和目标机型对相应方法所做的改动。
+        A。使用tools目录下的rmline.sh将所有的.line删掉
+        B。比较root/porting/miui/change-list中所有的文件
+
+    (5) 将miui新增的类直接拷贝到相应的目录中
+        注：这里将miui的framework.jar.out，android.policy.jar.out，services.jar.out与待适配机型相比较，
+           将miui目录下新增的MiuiXXXX.java拷贝到适配机型的.out目录，对于个别miui目录下新增的不是MiuiXXX.java开始的文件，需要核对提交记录或文件注释。
+    (6) 利用apktool汇编成新的framework.jar, android.policy.jar和services.jar
+
+    (7) 对所有的APK重新签名
+
+    (8) 将这些改动和framework-miui-res.apk push到手机上，WIPE数据重启。 
+
+    (9) 逐个的将miui app移植到新机型
+
+
+defy机root脚本
+adb shell mv /data/local/12m /data/local/12m.bak
+adb shell ln -s /data /data/local/12m
+adb reboot
+adb wait-for-device
+adb shell rm /data/local/12m
+adb shell mv /data/local/12m.bak /data/local/12m
+adb shell mv /data/local.prop /data/local.prop.bak
+
+chmod 777 data
+cd data
+chmod 777 local.prop
+adb shell "echo 'ro.sys.atvc_allow_netmon_usb=0' > /data/local.prop"
+adb shell "echo 'ro.sys.atvc_allow_netmon_ih=0' >> /data/local.prop"
+adb shell "echo 'ro.sys.atvc_allow_res_core=0' >> /data/local.prop"
+adb shell "echo 'ro.sys.atvc_allow_res_panic=0' >> /data/local.prop"
+adb shell "echo 'ro.sys.atvc_allow_all_adb=1' >> /data/local.prop"
+adb shell "echo 'ro.sys.atvc_allow_all_core=0' >> /data/local.prop"
+adb shell "echo 'ro.sys.atvc_allow_efem=0' >> /data/local.prop"
+adb shell "echo 'ro.sys.atvc_allow_bp_log=0' >> /data/local.prop"
+adb shell "echo 'ro.sys.atvc_allow_ap_mot_log=0' >> /data/local.prop"
+adb shell "echo 'ro.sys.atvc_allow_gki_log=0' >> /data/local.prop"
+
+chmod 771 data
+cd data
+chmod 644 local.prop
+adb reboot
+
+
+MIUI V4主题资源贴
+http://www.miui.com/thread-513339-1-1.html
+
+体检地点：
+朝阳区望京街9号望京国际商业中心C座106号1，3层
+
+razr进recovery命令
+echo 1 > /data/.recovery_mode ; sync ; reboot ; 
+
+---------------------------------反汇编boot.img-------------------------------------------
+unpackbootimg -i boot.img
+mkdir ramdisk
+cd ramdisk
+gzip -dc ../boot.img-ramdisk.gz | cpio -i
+
+cd ..
+mkbootfs ramdisk | gzip > ramdisk-new.gz
+mkbootimg --cmdline 'console=ttyHSL0 androidboot.hardware=pyramid no_console_suspend=1' --kernel boot.img-zImage --ramdisk ramdisk-new.gz --base 0x48000000 --pagesize 2048 -o boot-new.img
+
+--------------------------------javac 编译不过的处理方法-----------------------------------------------
+$ javac -version
+javac 1.6.0_24
+
+sunjdk 1.6在25版本之前的javac对范型的编译有bug http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6302954
+升级一下jdk吧
+
+不过由于license的问题，ubuntu的repository下已经没有sun的jdk了，可以通过如下办法获得官方jdk的repository
+cd ~/
+wget https://github.com/flexiondotorg/oab-java6/raw/0.2.6/oab-java.sh -O oab-java.sh
+chmod +x oab-java.sh
+sudo ./oab-java.sh
+
+然后就可以正常
+sudo apt-get install sun-java6-jdk 
+
+----------------------------ubunt 12.04安装注意---------------------------------------
+网络安装时，需要先选择back，手工制定安装源为mirrors.n.xiaomi.com,而后才能使用内网安装，否则会从网络下载大量文件，非常费时。
+
+http://www.ubuntusoft.com/ubuntu-12-04-%E6%94%B9%E9%80%A0%E6%8C%87%E5%8D%97.html
+安装gnome 经典登录界面。http://www.lupaworld.com/article-217871-1.html
+sudo apt-get install gnome-panel
+安装gnome配色，修改背景色
+sudo apt-get install gnome-color-chooser
+sudo apt-get install gnome-tweak-tool 
+
+配置打包环境
+sudo useradd -g root builder
+passwd builder
+sudo apt-get install openssh-server
+
+sudo update-alternatives --config java 选择标准java
+
+降级gcc到4.4
+ubuntu 11.10的gcc版本是4.6.1，版本太高，编译android时出错，要把gcc版本改为4.4.6, 4.5的版本据说可以，但没试过.
+通 过gcc -v命令可以发现gcc库在/usr/lib/gcc/i686-linux-gnu目录下，该目录下有当前系统支持的各种版本gcc库 。在安装gcc 4.4前该目录下是没有4.4目录的，安装gcc 4.4后该目录下就会多出4.4这个目录，且该4.4目录下有各种相应库文件。
+ubuntu 32bit系统下安装gcc 4.4的最好方法是仅用以下两条命令，不需要其它命令，否则编译时可能会出错。
+sudo apt-get install gcc-4.4
+sudo apt-get install g++-4.4
+
+装完后在/usr/bin目录下
+$ ls -l gcc*
+lrwxrwxrwx 1 root root      7 2011-10-29 09:11 gcc -> gcc-4.6
+-rwxr-xr-x 1 root root 224544 2011-10-06 05:47 gcc-4.4
+-rwxr-xr-x 1 root root 302104 2011-09-17 05:43 gcc-4.6
+发现gcc 链接到gcc-4.6,  需要将它改为链接到gcc-4.4 :
+sudo mv gcc gcc.bak
+sudo ln -s gcc-4.4 gcc
+同理
+ls -l g++*
+lrwxrwxrwx 1 root root      7 2011-08-14 15:17 g++ -> g++-4.6
+-rwxr-xr-x 1 root root 228640 2011-10-06 05:45 g++-4.4
+-rwxr-xr-x 1 root root 306200 2011-09-17 05:39 g++-4.6
+需要将g++链接改为g++-4.4:
+/usr/bin$ sudo mv g++ g++.bak
+/usr/bin$sudo ln -s g++-4.4 g++
+
+
+再查看gcc和g++版本号：
+gcc -v
+g++ -v
+均显示gcc version 4.4.6 ，说明gcc 4.4安装成功。
+
+安装多线程编译
+sudo apt-get install g++-4.4-multilib
+
+virtualbox 配置
+在linnux和windows中安装扩展插件
+按照下面的帖子增加usb组
+http://www.ubuntubuzz.com/2011/10/fix-virtualbox-error-failed-to-access.html
+重启电脑
+
+配置电脑IP
+使用ping 命令找到一个ping不通的空闲IP,例如：10.237.36.242
+子网掩码：255.255.255.0
+网关：10.237.36.1
+DNS：10.237.2.254
+
+安装wine。
+http://www.ubuntuhome.com/ubuntu-12-04-wine-1-5-10.html
+
+如果有依赖问题，解决方法回复官方源，apt-get update，在安装http://feather.im/topic/53

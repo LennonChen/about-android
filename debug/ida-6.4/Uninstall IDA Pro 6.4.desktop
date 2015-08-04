@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Version=0.9.4
+Name=Uninstall IDA Pro 6.4
+Comment=Uninstall
+Icon=
+Exec=/home/niejuhu/ida-6.4/uninstall
+Terminal=false
+Path=/home/niejuhu/ida-6.4

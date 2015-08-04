@@ -1,0 +1,12 @@
+
+make target-files-package
+
+out/product/pisces/obj/PACKAGING/target…./pisces-target-files….zip
+
+sign.n.miui.com
+
+download signed zip
+
+build/tools/releasetools/img_for_target..    signed.zip out.zip
+
+unzip out.zip -> system.img

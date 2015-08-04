@@ -1,0 +1,5 @@
+config SIMULATOR_DEVICE
+       tristate "Simulator Device Driver"
+       default y
+       help
+       This is the simulator device driver for android system

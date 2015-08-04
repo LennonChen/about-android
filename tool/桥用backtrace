@@ -1,0 +1,172 @@
+巧用backtrace系列函数，在不具备gdb环境的Linux系统上大致定位...
+2010-10-15 | 阅：  转：  |  分享 
+  
+1: 段错误产生的原因
+
+简而言之,产生段错误就是访问了错误的内存段，一般是你没有权限，或者根本就不存在对应的物理内存,
+尤其常见的是访问0地址.一旦一个程序发生了越界访问，系统就采取内存保护措施，并给那个程序发送
+SIGSEGV信号，程序接到那个信号后就知道segmentation fault出现了。
+
+想对”段错误”有更详细的了解可以去阅读“Linux下的段错误产生的原因及调试方法” 这篇文章，本文的
+内容基本是从那文章里提取出来的。
+2: SIGSEGV信号处理函数
+
+程序接到SIGSEGV信号后的缺省处理是退出程序,这也是为什么总是看到程序打印一个“segmentation fault”
+信息后就消失了。我们可以使用 signal(SIGSEGV, &your_function);函数来接管SIGSEGV信号的处理，让
+程序在发生段错误后，自动调用我们准备好的函数，从而在那个函数里来获取当前函数调用栈。
+3: libc的Backtraces函数
+
+在GDB里，可以简单的使用bt命令就可以获取函数调用栈，但如何通过代码获取当前函数调用栈？
+这里我们可以通过libc库提供的Backtraces系列函数。
+?[Copy to clipboard]View Code TEXT
+
+A backtrace is a list of the function calls that are currently active in a
+            thread. The usual way to inspect a backtrace of a program is to use an
+            external debugger such as gdb. However, sometimes it is useful to
+            obtain a backtrace programmatically from within a program, e.g., for the
+            purposes of logging or diagnostics.
+             
+            The header file execinfo.h declares three functions that obtain and
+            manipulate backtraces of the current thread.
+
+4: 实现步骤
+
+4.1 在你的工程中添加如下代码：
+?[Copy to clipboard]View Code C
+
+#include <execinfo.h>
+            #include <stdio.h>
+            #include <stdlib.h>
+            #include <signal.h>
+             
+            void dump(int signo)
+            {
+            void *array[30];
+            size_t size;
+            char **strings;
+            size_t i;
+             
+            size = backtrace (array, 30);
+            strings = backtrace_symbols (array, size);
+             
+            fprintf (stderr,"Obtained %zd stack frames.nm", size);
+             
+            for (i = 0; i < size; i++)
+            fprintf (stderr,"%sn", strings[i]);
+             
+            free (strings);
+             
+            exit(0);
+            }
+             
+            Debug_Printf_FrameInfos()
+            {
+            signal(SIGSEGV, &dump);
+            }
+
+4.2 在mian函数开始位置处调用 Debug_Printf_FrameInfos() 函数
+4.3 在编译程序时 加上 -g 选项
+5 定位出错函数地址实例
+
+这里以 test.c 为例，来查找出错函数地址
+?[Copy to clipboard]View Code C
+
+#include <execinfo.h> 
+            #include <stdio.h>
+            #include <stdlib.h>
+            #include <signal.h>
+             
+            void dump(int signo)
+            {
+            void *array[30];
+            size_t size;
+            char **strings;
+            size_t i;
+             
+            size = backtrace (array, 30);
+            strings = backtrace_symbols (array, size);
+             
+            fprintf (stderr,"Obtained %zd stack frames.nm", size);
+             
+            for (i = 0; i <= size; i++)
+            fprintf (stderr,"%s\n", strings[i]);
+             
+            free (strings);
+            exit(0);
+            }
+             
+            Debug_Printf_FrameInfos()
+            {
+            signal(SIGSEGV, dump);
+            }
+             
+            void func_c()
+            {
+            * ((volatile char *) 0x0) = 0x999;
+            }
+            void func_b()
+            {
+            func_c();
+            }
+            void func_a()
+            {
+            func_b();
+            }
+            int main()
+            {
+            Debug_Printf_FrameInfos();
+            func_a();
+            return 0;
+            }
+
+该例程调用序列为:
+main() -> func_a() -> func_b() -> func_c() -> 出错
+5.1编译程序:
+
+# gcc -g test.c -o test
+
+注：选项 -rdynamic 可用来通知链接器将所有符号添加到动态符号表中，如果你的链接器支持-rdynamic的话，
+建议将其加上，即
+# gcc -rdynamic -g test.c -o test
+5.2 运行 test程序:
+?[Copy to clipboard]View Code BASH
+
+ #  ./test
+            Obtained 7 stack frames.nm./a.out [0x80484e3]
+            [0xb7f70420]
+            ./a.out [0x804859d]
+            ./a.out [0x80485a7]
+            ./a.out [0x80485c4]
+            /lib/tls/i686/cmov/libc.so.6(__libc_start_main+0xe0) [0xb7e1e450]
+            ./a.out [0x8048461]
+            Segmentation fault
+
+如果编译似加了-rdynamic选项 的话，将打印如下信息
+?[Copy to clipboard]View Code BASH
+
+# ./test 
+            Obtained 7 stack frames.nm./test(dump+0x1f) [0x80487c3]
+            [0xb7fbb420]
+            ./test(func_b+0x8) [0x804887d]
+            ./test(func_a+0x8) [0x8048887]
+            ./test(main+0x1b) [0x80488a4]
+            /lib/tls/i686/cmov/libc.so.6(__libc_start_main+0xe0) [0xb7e69450]
+            ./test [0x8048741]
+
+打印信息比没加-rdynamic的程序多出了一个函数名称＋偏移地址..(func_b+0×8)
+5.3 使用objdump获取程序所有符合
+
+objdump -d ./test > tmp.txt
+5.4 分析和查找
+
+在tmp.txt 中查找0×80485ad的地址，你会发现如下信息：
+08048595 :
+8048595: 55 push %ebp
+8048596: 89 e5 mov %esp,%ebp
+8048598: e8 eb ff ff ff call 8048588
+804859d: 5d pop %ebp
+804859e: c3
+
+其中 804859d 是调用（ call 8048588 ）c函数后的地址，虽然并没有直接定位到C函数，
+通过汇编代码，基本可以推出是在C函数出现问题了。(pop指令不会导致段错误的)
+

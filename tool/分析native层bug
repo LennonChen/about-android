@@ -1,0 +1,57 @@
+通常的C/C++代码中，可以通过响应对内存操作不当引起的Segmentation Fault错误即信号SIGSEGV（11）做出响应处理。只要在程序中设置SIGSEGV的handler中，调用libc的backtrace，打出对应的堆栈信息，很快就能找到问题所在。但在Android中，bionic并不提供类似功能，而且log信息是走的loger，通过logcat才可以看到。但是android也会输出log信息，象下面这样：
+
+02-08 10:36:32.076: INFO/DEBUG(1261): pid: 1959, tid: 1959  >>> Android.radio <<<
+02-08 10:36:32.076: INFO/DEBUG(1261): signal 11 (SIGSEGV), fault addr 00198080
+02-08 10:36:32.076: INFO/DEBUG(1261):  r0 00198080  r1 81116dac  r2 ffffffea  r3 00000000
+02-08 10:36:32.086: INFO/DEBUG(1261):  r4 8111a9f0  r5 0000000a  r6 00000888  r7 0000000a
+02-08 10:36:32.086: INFO/DEBUG(1261):  r8 735f6d66  r9 525f6474  10 4104bcd8  fp 00000000
+02-08 10:36:32.086: INFO/DEBUG(1261):  ip a0000000  sp bec1a300  lr 81112561  pc 81109124  cpsr 80010010
+02-08 10:36:32.306: INFO/DEBUG(1261):          #00  pc 00009124  /system/lib/libfmradio_jni.so
+02-08 10:36:32.306: INFO/DEBUG(1261):          #01  pc 0001255c  /system/lib/libfmradio_jni.so
+02-08 10:36:32.306: INFO/DEBUG(1261):          #02  pc 0000c93e  /system/lib/libfmradio_jni.so
+02-08 10:36:32.316: INFO/DEBUG(1261):          #03  pc 0000ae14  /system/lib/libfmradio_jni.so
+02-08 10:36:32.316: INFO/DEBUG(1261):          #04  pc 00008a72  /system/lib/libfmradio_jni.so
+02-08 10:36:32.316: INFO/DEBUG(1261):          #05  pc 00006c22  /system/lib/libfmradio_jni.so
+02-08 10:36:32.326: INFO/DEBUG(1261):          #06  pc 00004d92  /system/lib/libfmradio_jni.so
+02-08 10:36:32.326: INFO/DEBUG(1261):          #07  pc 0000e434  /system/lib/libdvm.so
+
+通常编译Android代码时，出于size的考虑，剔除了符号信息。但我们可以使用编译时生成的二进制文件(转注：含有符号信息的文件，通常位于./out/target/product/[PROJECT]/symbols/system/lib/目录)，获取其符号信息，从而得到调用堆栈：
+
+$ ./prebuilt/linux-x86/toolchain/arm-eabi-4.4.3/bin/arm-eabi-addr2line -f -e ./out/target/product/[PROJECT]/symbols/system/lib/libfmradio_jni.so 0000960c 000129ec 0000cdce 0000b2a4 00009496 00008258 000054f6
+non_congruent
+bionic/libc/arch-arm/bionic/memcpy.S:229
+__sfvwrite
+bionic/libc/stdio/fvwrite.c:151
+__sprint
+bionic/libc/stdio/vfprintf.c:71
+printf
+bionic/libc/stdio/printf.c:44
+fm_std_Power
+frameworks/base/fmradio/jni/http://www.cnblogs.com/http://www.cnblogs.com/external/.../fmradio/fmapi/fm_std_api.c:144
+_Z11fm_SwitchOnv
+frameworks/base/fmradio/jni/fm_functions.cpp:95
+radio_SwitchOn
+frameworks/base/fmradio/jni/native.cpp:41
+yang@Ubuntu$ c++filt _Z11fm_SwitchOnv
+fm_SwitchOn()
+
+通过这种方式，即可得到调用堆栈信息，找出问题所在。
+
+
+-------------------------------------------------------------------------------------------------------------------
+方法二
+-------------------------------------------------------------------------------------------------------------------
+cat logcat_3.log | ndk-stack -sym ~/[SOURCE-DIR]/out/target/product/[PROJECT]/symbols/system/lib/
+
+
+-------------------------------------------------------------------------------------------------------------------
+方法三
+-------------------------------------------------------------------------------------------------------------------
+转自：http://www.cppblog.com/fwxjj/archive/2011/09/30/157242.aspx
+
+google提供了一个python脚本，可以从 http://code.google.com/p/android-ndk-stacktrace-analyzer/ 下载这个python脚本，然后使用 
+adb logcat -d > logfile 导出 crash 的log,
+使用 arm-eabi-objdump (位于build/prebuilt/linux-x86/arm-eabi-4.2.1/bin下面)把so或exe转换成汇编代码，如：
+arm-eabi-objdump -S mylib.so > mylib.asm,
+然后使用脚本
+python parse_stack.py <asm-file> <logcat-file>

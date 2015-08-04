@@ -1,0 +1,1 @@
+obj-$(CONFIG_SIMULATOR_DEVICE) += simulator.o

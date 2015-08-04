@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <title>CSDN Ad</title>
+    <style type="text/css">
+        body { margin:0px; padding:0px;}
+    </style>
+     <script src="Android--Service%E7%9A%84%E5%90%AF%E5%8A%A8%E6%96%B9%E6%B3%95%E5%92%8C%E5%8C%BA%E5%88%AB%20-%20zlQQhs%EF%BC%88%E8%8E%AB%E8%90%BD%EF%BC%89%E7%9A%84%E4%B8%93%E6%A0%8F%20-%20%E5%8D%9A%E5%AE%A2%E9%A2%91%E9%81%93%20-%20CSDN.NET_files/jquery.js" type="text/javascript"></script>
+</head>
+<body>
+    <div id="div1"><style type="text/css">
+ul { margin:0px; padding:0 4px 0 0; }
+ul, x:-moz-any-link, x:default { width:90%; }
+ul li { padding:3px 0px;}
+a { font-size:12px; text-decoration:none; color:#006699; }
+a:hover { color:#000; }
+</style>
+
+<ul>
+
+<li><a href="http://blog.csdn.net/waljl/article/details/22539923" target="_blank">* 阿里实习生招聘笔试题目</a></li>
+
+
+<li><a href="http://blog.csdn.net/wangjinyu501/article/details/22584465" target="_blank">* Android 中Touch（触屏）事件传递机制</a></li>
+
+
+
+<li><a href="http://blog.csdn.net/yanzi1225627/article/details/22439119" target="_blank">* Android UI:看看Google官方自定义带旋转动画的ImageView</a></li>
+
+
+<li><a href="http://blog.csdn.net/zju_tony/article/details/22301365" target="_blank">* List、Set和Map区别</a></li>
+
+
+<li><a href="http://blog.csdn.net/buptgshengod/article/details/22273265" target="_blank">* android SQLite数据库用法图文详解（附源码）</a></li>
+
+
+<li><a href="http://blog.csdn.net/lovecodeless/article/details/21519243" target="_blank">* 【C解析之七】文件进阶</a></li>
+
+</ul></div>
+<script type="text/javascript">
+    window.onload = function () {
+        if (document.domain != 'blog.csdn.net') {
+            document.domain = "csdn.net";
+        }
+        //这种给广告区域赋值的方式，对于有些JS广告不能完美的显示
+        //top.document.getElementById('ad_commend').innerHTML = document.getElementById('div1').innerHTML;
+
+        var h = document.body.offsetHeight + 2;
+        setTimeout(function () {
+            if (h > 800) h = document.getElementById('div1').offsetHeight + 4;
+            try { top.document.getElementById('ad_frm_1').style.height = h + 'px'; }
+            catch (err) { }
+        }, 100);
+    };
+    $(function() {
+        $("#div1 a").click(function() {
+            top._gaq.push(['_trackEvent', 'function', 'onclick', 'blog_articles_tuijianwenzhang']);
+        });
+    });
+</script>
+
+
+</body></html>

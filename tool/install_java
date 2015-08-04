@@ -1,0 +1,25 @@
+
+sudo add-apt-repository ppa:webupd8team/java
+sudo apt-get update
+sudo apt-get install oracle-java6-installer
+
+sudo apt-get install oracle-java6-set-default
+
+sudo update-java-alternatives -s java-7-oracle
+sudo update-java-alternatives -s java-6-sun
+
+Java 7: For the latest version of Android
+
+$ sudo apt-get update
+$ sudo apt-get install openjdk-7-jdk
+
+Optionally, update the default Java version by running:
+
+$ sudo update-alternatives --config java
+$ sudo update-alternatives --config javac
+
+If you encounter version errors for Java, set its path as described in the Wrong Java Version section.
+
+To develop older versions of Android, download and install the corresponding version of the Java JDK:
+Java 6: for Gingerbread through KitKat
+Java 5: for Cupcake through Froyo

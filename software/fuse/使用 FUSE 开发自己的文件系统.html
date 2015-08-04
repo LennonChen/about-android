@@ -1,0 +1,885 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html class="dj_gecko dj_contentbox" xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh-CN" lang="zh-CN"><head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>使用 FUSE 开发自己的文件系统</title>
+<link rel="schema.DC" href="http://purl.org/DC/elements/1.0/">
+<link rel="SHORTCUT ICON" href="https://www.ibm.com/favicon.ico">
+<meta name="DC.Rights" content="© Copyright&nbsp;IBM Corporation&nbsp;2006">
+<meta name="Keywords" content="fuse, filesystem in user space, afs, lwp, rx, rpc, remote procedure call, andrew filesystem, ufo project, openafs, lufs, cifs, userfs, 用户空间中的文件系统, 远程过程调用, andrew 文件系统, ufo 项目, tttlca">
+<meta name="DC.Date" scheme="iso8601" content="2006-04-10">
+<meta name="Source" content="v17 delivery:developerWorks">
+<meta name="Security" content="Public">
+<meta name="Abstract" content="使用用户空间的文件系统（FUSE），您无需理解文件系统的内幕，也不用学习内核模块编程的知识，就可以开发用户空间的文件系统框架。本文是一篇简单的逐步介绍的指南，内容包括安装、定制和启用 FUSE 和 AFS，这样您就可以在 Linux 的用户空间中创建自己的功能完备的文件系统了。">
+<meta name="Description" content="使用用户空间的文件系统（FUSE），您无需理解文件系统的内幕，也不用学习内核模块编程的知识，就可以开发用户空间的文件系统框架。本文是一篇简单的逐步介绍的指南，内容包括安装、定制和启用 FUSE 和 AFS，这样您就可以在 Linux 的用户空间中创建自己的功能完备的文件系统了。">
+<meta name="IBM.Effective" scheme="W3CDTF" content="2006-04-10">
+<meta name="Owner" content="developerWorks/China/IBM">
+<meta name="DC.Language" scheme="rfc1766" content="zh-CN">
+<meta name="IBM.SpecialPurpose" content="SP001">
+<meta name="IBM.Country" content="CN">
+<meta name="Robots" content="index,follow">
+<meta name="DC.Type" scheme="IBM_ContentClassTaxonomy" content="CT316">
+<meta name="DC.Subject" scheme="IBM_SubjectTaxonomy" content="SWGC0">
+<meta name="dW.ContentArea" content="2">
+<meta name="dW.Topic" content="699">
+<!-- META_INCLUDE -->
+<meta scheme="IBM_WTMCategory" name="IBM.WTMCategory" content="SOFDCLNXCN">
+
+<!-- HEADER_SCRIPTS_AND_CSS_INCLUDE -->
+<link href="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/www.css" rel="stylesheet" title="www" type="text/css">
+<link href="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/cnzh.css" rel="stylesheet" title="www" type="text/css">
+<!-- Masthead/footer -->
+<link href="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/dw-mfN2014-05.css" media="screen,projection" rel="stylesheet" title="www" type="text/css">
+<link href="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/dw-article-6.css" rel="stylesheet" title="www" type="text/css">
+<link href="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/dw-common-features.css" rel="stylesheet" title="www" type="text/css">
+<link href="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/dw-local-site-v17-N2014-05.css" media="screen,projection" rel="stylesheet" title="www" type="text/css">
+<script type="text/javascript" src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/www.js">//</script><script type="text/javascript" src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/eluminate.js"></script><script src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/head.js"></script><script src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/50200000.js" type="text/javascript" language="javascript"></script><script src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/rules_50200000.js" type="text/javascript" language="javascript"></script><script src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/dispatcher-v3.js" type="text/javascript" language="javascript"></script>
+<script type="text/javascript" src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/dw-www.js">//</script><script src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/Dialog.js" charset="utf-8" type="text/javascript"></script>
+
+<script type="text/javascript">
+//  ibmweb.config.set({ sbs: { enabled: false }});
+</script>
+    
+
+<!-- LEADSPACE_STYLES -->
+
+<!-- canonical url generation -->
+	<link rel="canonical" href="http://www.ibm.com/developerworks/cn/linux/l-fuse/index.html">
+
+
+<script charset="utf-8" id="dojoIoScript1" src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/cnzh-utf8.js" type="text/javascript"></script><script charset="utf-8" id="dojoIoScript2" src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/a" type="text/javascript"></script><script charset="utf-8" id="dojoIoScript3" src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/profiling.js" type="text/javascript"></script><script type="text/javascript" src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/cp-v3.js"></script><script src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/move.js" charset="utf-8" type="text/javascript"></script><script src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/TimedMoveable.js" charset="utf-8" type="text/javascript"></script><script src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/_CssStateMixin.js" charset="utf-8" type="text/javascript"></script><script src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/_FormMixin.js" charset="utf-8" type="text/javascript"></script><script src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/_DialogMixin.js" charset="utf-8" type="text/javascript"></script><script src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/DialogUnderlay.js" charset="utf-8" type="text/javascript"></script><script src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/ContentPane.js" charset="utf-8" type="text/javascript"></script><script src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/common_002.js" charset="utf-8" type="text/javascript"></script><script src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/TooltipDialog.js" charset="utf-8" type="text/javascript"></script><script charset="utf-8" id="dojoIoScript4" src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/blackwhite_lists.asc" type="text/javascript"></script><script src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/Moveable.js" charset="utf-8" type="text/javascript"></script><script src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/Mover.js" charset="utf-8" type="text/javascript"></script><script src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/_ContentPaneResizeMixin.js" charset="utf-8" type="text/javascript"></script><script src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/html.js" charset="utf-8" type="text/javascript"></script><script src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/loading.js" charset="utf-8" type="text/javascript"></script><script src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/common.js" charset="utf-8" type="text/javascript"></script><script src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/autoscroll.js" charset="utf-8" type="text/javascript"></script><script src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/_LayoutWidget.js" charset="utf-8" type="text/javascript"></script></head>
+
+<body aria-busy="false" class="v17" id="ibm-com">
+
+	<div id="ibm-top" class="ibm-landing-page ibm-no-scroll"><img src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/ibm_logo_print.png" id="ibm-print-masthead" alt="IBM Print" height="15" width="43">
+
+<!-- MASTHEAD_BEGIN -->
+<div role="banner" id="ibm-masthead">
+
+    <!-- TOP ROW -->    
+	<div id="dw-masthead-top-row">
+		<ul id="ibm-mast-options-dw" role="toolbar" class="cn">
+		<li role="presentation" id="dw-mast-top-4">
+				<a tabindex="0" href="http://www.ibm.com/developerworks/cn/"><img src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/dwn-dw-badge.png" alt="dW" aria-label="dW" height="22" width="43"></a></li>
+			<li role="presentation" id="dw-mast-top-0">
+				<div><a class="" href="https://www.ibm.com/developerworks/dwwi/DWAuthRouter?m=loginpage&amp;lang=zh&amp;d=https%3A%2F%2Fwww.ibm.com%2Fdeveloperworks%2Fcn%2Flinux%2Fl-fuse%2F" title="" role="button" tabindex="0">登录 (或注册)</a></div>
+			</li>
+			<li role="presentation" id="dw-mast-top-1">
+				<div><a href="#SELECTLANG" role="button">中文</a></div>
+			</li>
+			<li role="presentation" id="dw-mast-top-3">
+				<a role="button" href="http://www.ibm.com/">IBM</a>
+			</li>
+			<li role="presentation" id="dw-mast-top-2" class="dw-mf-hide">
+				<a href="#">[userid]</a>
+			</li>
+		</ul>
+	</div>
+
+    <!-- TOP ROW SLIDER -->
+	<div id="ibm-my-menu-dw" style="display:none">
+        <!-- Sign-in -->
+		
+        <!-- Language selector --> 
+		
+		<div id="empty_div" class="dw-mast-columns" role="group"><!-- Authenticated --></div>		
+		<!-- IBM -->
+				
+	<div widgetid="ibmweb_ribbon_0" id="ibmweb_ribbon_0" class="ibm-container-body" dojoattachpoint="ribbonContainer"><a title="上一个" style="margin-top: -12px;" class="ibm-ribbon-prev ibm-disabled" dojoattachpoint="scrollLeftButton" role="button" href="#">上一个</a><div style="height: 0px;" class="ibm-ribbon-pane" dojoattachpoint="scrollContainer"><div id="ibmweb_ribbon_0_scrollable" class="ibm-ribbon-section" dojoattachpoint="scrollableNode" role="listbox"><div aria-labelledby="ibm-rib-menu-0" widgetid="ibmweb_ribbonSlide_0" id="ibmweb_ribbonSlide_0" class="ibm-columns" dojoattachpoint="containerNode" role="dialog"><h2 id="ibm-rib-menu-0" class="ibm-access">登录 (或注册)</h2><div widgetid="ibmweb_ribbonItemAbstract_0" tabindex="0" id="ibmweb_ribbonItemAbstract_0" class="dw-mast-columns" role="group">
+			<div class="dw-mast-col-1-1">
+				<div id="dw-mast-sso">
+					<div id="signin_error_mf" class="no-display"></div>
+					<div id="dw-mast-sso-form">
+						<form id="sForm_mf" action="" method="post" name="sForm_name_mf" onsubmit="return false;">
+							<div id="dw-mast-sso-id" class="dw-mast-sso-id-cn">
+								<label for="ibmid_mf">IBM ID:</label>
+								<input id="ibmid_mf" name="ibmid_name_mf" maxlength="100" onkeypress="dwsi.siInst.handleEP(event,this.form,'mf');" type="text">
+							</div>
+							<div id="dw-mast-sso-pw" class="dw-mast-sso-pw-cn">
+								<label for="pw_mf">密码：</label>
+								<input id="pw_mf" value="" name="pw_name_mf" maxlength="100" onkeypress="dwsi.siInst.handleEP(event,this.form,'mf');" type="password">
+							</div>
+							<div id="dw-mast-sso-target" class="dw-mast-sso-target-cn">
+								<p class="dw-mf-perm-box">
+									<input id="perm_mf" name="perm_name_mf" type="checkbox"><label for="perm_mf"> 保持登录。</label>
+								</p>
+							</div>					
+							<div id="dw-mast-sso-terms">
+								<p class="dw-mast-sso-terms-cn">单击提交则表示您同意developerWorks 的条款和条件。 <a href="https://www.ibm.com/developerworks/community/terms?lang=zh">查看条款和条件</a>.</p>
+									</div>
+							<div>
+								<input class="dw-mf-submit-btn-cn" name="ibm_submit_name_mf" value="提交" onclick="dwsi.siInst.signin('mf');return false;" type="submit">
+							</div>
+						</form>
+					</div>
+					<div id="dw-mast-sso-update">
+						<div id="dw-mast-sso-update-id">
+							<ul>
+								<li><a href="#" onclick="(function ()
+								    {window.location='//www.ibm.com/developerworks/dwwi/DWAuthRouter?m=reg&amp;lang=zh_CN&amp;d='+encodeURIComponent(location.href);})();">需要一个 IBM ID？</a></li>
+								<li><a href="https://www.ibm.com/developerworks/dwwi/jsp/WSHelp.jsp?lang=zh_CN">忘记 IBM ID？</a></li>
+							</ul>
+						</div>
+						<div id="dw-mast-sso-update-pw">
+							<ul class="dw-mf-pwupdate">
+								<li><a href="#" onclick="(function ()
+								    {window.location='https://www.ibm.com/account/profile?page=forgot&amp;lang=zh_CN&amp;appname=ibm&amp;required=null&amp;d='+encodeURIComponent(dwsi.siInst.getAuthUrl())+'%3Fm%3Dloginpage%26lang%3Den_US%26d%3D'+encodeURIComponent(location.href);})();">忘记密码？</a></li>
+								<li><a href="#" onclick="(function ()
+								    {window.location='https://www.ibm.com/account/profile?page=chpw&amp;lang=zh_CN&amp;appname=ibm&amp;required=null&amp;d='+encodeURIComponent(location.href);})();">更改您的密码</a></li>
+							</ul>
+						</div>
+					</div>
+					<div id="dw-mast-sso-text">
+						<p>在您首次登录 developerWorks 时，会为您创建一份个人概要。<strong>您的个人概要中的信息（您的姓名、国家/地区，以及公司名称）是公开显示的，而且会随着您发布的任何内容一起显示，除非您选择隐藏您的公司名称。</strong>您可以随时更新您的 IBM 帐户。</p>
+						<p class="dw-mf-secure-cn">所有提交的信息确保安全。</p>
+					</div>
+				</div>
+				<div id="dw-mast-dname" class="dw-mf-hide">
+					<p>当您初次登录到 developerWorks 时，将会为您创建一份概要信息，您需要指定一个昵称。您的昵称将和您在 developerWorks 发布的内容显示在一起。</p><p><strong>昵称长度在 3 至 31 个字符之间</strong>。 您的昵称在 developerWorks 社区中必须是唯一的，并且出于隐私保护的原因，不能是您的电子邮件地址。</p>
+					<div id="signin_dname_error_mf" class="no-display"></div>
+					<div id="dw-mast-dname-form" class="dw-mast-dname-form-cn">
+						<form id="dForm_mf" action="" method="post" name="dForm_name_mf" onsubmit="return false;">
+							<div id="dw-mast-dname-mf">
+								<label for="dname_mf">昵称：</label>
+								<input id="dname_mf" name="dname_name_mf" maxlength="31" size="25" onkeypress="dwsi.siInst.handleEP(event,this.form,'mf');" type="text">
+							</div>
+							<div id="dw-mast-dname-terms">
+								<p class="dw-mast-dname-terms-cn">单击<strong>提交</strong>则表示您同意developerWorks
+								    的条款和条件。 <a href="https://www.ibm.com/developerworks/community/terms?lang=zh">查看条款和条件</a>.</p>
+									</div>
+							<div>
+								<input class="dw-mf-submit-btn-cn" name="dname_submit_name_mf" value="提交" onclick="dwsi.siInst.signin('mf');return false;" type="submit">
+							</div>
+						</form>								
+					</div>
+					<div id="dw-mast-dname-secure">
+						<p class="dw-mf-secure-cn">所有提交的信息确保安全。</p>
+					</div>
+				</div>
+				<div id="dw-mast-auth" class="dw-mf-hide">
+					<div>
+						<h2>developerWorks 社区:</h2>
+                		<ul>
+							<li><a id="dw-mast-top-0-0" href="https://www.ibm.com/developerworks/community/homepage?lang=zh">我的首页</a></li>						    
+							<li><a href="https://www.ibm.com/developerworks/community/profiles/html/myProfileView.do?lang=zh">我的概要信息</a></li>
+							<li><a href="https://www.ibm.com/developerworks/community/groups/service/html/mycommunities?lang=zh">我的社区</a></li>
+			                 <li><a href="https://www.ibm.com/developerworks/community/news/?lang=zh">设置</a></li>
+										    
+						</ul>     
+					</div>
+					
+					<div class="dw-mast-more">
+						<ul class="ibm-link-list">
+							<li><a class="dw-more-link" href="#" onclick="dwsi.siInst.signOut(); return false;"><strong>退出</strong></a></li>
+						</ul>
+					</div>
+				</div>								
+			</div>		
+		</div></div><div aria-labelledby="ibm-rib-menu-1" widgetid="ibmweb_ribbonSlide_1" id="ibmweb_ribbonSlide_1" class="ibm-columns" dojoattachpoint="containerNode" role="dialog"><h2 id="ibm-rib-menu-1" class="ibm-access">中文</h2><div widgetid="ibmweb_ribbonItemAbstract_1" tabindex="0" id="ibmweb_ribbonItemAbstract_1" class="dw-mast-columns" role="group">
+			<div class="dw-mast-col-2-1">
+				<h2>选择语言：</h2>
+				<ul>
+					<li><a id="dw-mast-top-1-0" href="http://www.ibm.com/developerworks/" lang="en">English</a></li>
+					<li><a href="http://www.ibm.com/developerworks/cn/">中文</a></li>
+					<li><a href="http://www.ibm.com/developerworks/jp/" lang="ja">日本語</a></li>
+					<li><a href="http://www.ibm.com/developerworks/ru/" lang="ru">Русский</a></li>
+				</ul>
+			</div>
+			<div class="dw-mast-col-2-2">
+				<ul>
+					<li><a href="http://www.ibm.com/developerworks/br/" lang="pt">Português (Brasil)</a></li>
+					<li><a href="http://www.ibm.com/developerworks/ssa/" lang="es">Español</a></li>
+					<li><a href="http://www.ibm.com/developerworks/vn/" lang="vi">Việt</a></li>
+				</ul>
+			</div>
+		</div></div><div aria-labelledby="ibm-rib-menu-2" widgetid="ibmweb_ribbonSlide_2" id="ibmweb_ribbonSlide_2" class="ibm-columns" dojoattachpoint="containerNode" role="dialog"><h2 id="ibm-rib-menu-2" class="ibm-access">IBM</h2><div widgetid="ibmweb_ribbonItemAbstract_2" tabindex="0" id="ibmweb_ribbonItemAbstract_2" class="dw-mast-columns" role="group">
+			<div class="dw-mast-col-2-1">
+				<ul>
+					<li><a id="dw-mast-top-3-0" href="http://www.ibm.com/cn/zh/">IBM 主页</a></li>
+					<li><a href="http://www.ibm.com/solutions/cn/zh/">解决方案</a></li>
+					<li><a href="http://www.ibm.com/software/cn/">软件</a></li>
+				</ul>
+			</div>
+			<div class="dw-mast-col-2-2 dw-mast-ibm">
+				<ul>
+							<li><a href="http://www.ibm.com/support/cn/zh/">支持门户</a></li>
+							<li><a href="http://www.ibm.com/support/documentation/cn/zh/">产品文档</a></li>
+							<li><a href="http://www.ibm.com/redbooks/">Redbooks（英文）</a></li>
+				</ul>
+			</div>	
+		</div></div></div></div><a title="下一个" style="margin-top: -12px;" class="ibm-ribbon-next" dojoattachpoint="scrollRightButton" role="button" href="#">下一个</a><div class="ibm-mm-close"><span tabindex="0" aria-label="关闭" role="button" title="关闭"></span></div></div></div>
+		
+    <!-- BOTTOM ROW -->
+	<div id="ibm-universal-nav-dw" aria-label="Site map">
+		<ul id="ibm-unav-links-dw">
+			<li id="ibm-unav-home-dwlogo">
+				<a href="http://www.ibm.com/developerworks/cn/"><img src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/dwn-dw-wordmark.png" alt="developerWorks®" height="28" width="225"></a>
+			</li>
+		</ul>
+		<ul id="ibm-menu-links-dw" class="ibm-menu-links-dw-cn" role="toolbar" aria-label="Site map">
+			<li id="dw-mast-nav-0" role="presentation"><a href="http://www.ibm.com/developerworks/cn/topics/" tabindex="0">技术主题</a></li>
+			<li id="dw-mast-nav-1" role="presentation"><a href="http://www.ibm.com/developerworks/cn/downloads/">软件下载</a></li>
+			<li id="dw-mast-nav-2" role="presentation"><a href="http://www.ibm.com/developerworks/community/?lang=zh">社区</a></li>
+			<li id="dw-mast-nav-3" role="presentation"><a href="https://www.ibm.com/developerworks/community/groups/service/html/communityview?communityUuid=6d7f9e5d-5f89-4767-a006-a81b8d186370&amp;lang=zh">技术讲座</a></li>
+		</ul>
+		<form id="ibm-search-form" action="//www.ibm.com/search/csass/search/" method="get" name="form1" aria-label="搜索 developerWorks" role="search">
+			<p>
+				<label for="q"><span class="ibm-access">搜索 developerWorks</span></label>
+				<input id="q" name="q" value="搜索 developerWorks" maxlength="100" type="text">
+				<input name="sn" value="dw" type="hidden">
+				<input name="lang" value="zh" type="hidden">
+				<input name="cc" value="CN" type="hidden">
+				<input name="en" value="utf" type="hidden">
+				<input name="hpp" value="20" type="hidden">
+				<input name="dws" value="cndw" type="hidden">
+				<input name="lo" value="zh" type="hidden">
+				<input id="ibm-search" class="ibm-btn-search" value="提交" type="submit">
+			</p>
+		</form>
+	</div>    
+	
+<div id="dw-masthead-top"><div aria-label="社交工具" role="navigation" style="display: block;" id="ibm-social-tools"><ul aria-label="Social tool list" role="toolbar"><li><a tabindex="0" role="button" dojoattrid="0" rel="print" href="#" title="打印本页面" class="ibm-share-print">打印本页面</a></li><li><a tabindex="-1" role="button" dojoattrid="1" rel="email" href="#" title="用电子邮件发送本页面" class="ibm-share-email">用电子邮件发送本页面</a></li><li></li><li></li><li><a class="ibm-share-weibo" tabindex="-1" role="button" dojoattrid="2" rel="新浪微博" title="新浪微博" href="http://service.weibo.com/share/share.php?title=%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F&amp;url=https%3A%2F%2Fwww.ibm.com%2Fdeveloperworks%2Fcn%2Flinux%2Fl-fuse%2F&amp;language=zh_cn" onclick="ibmweb.sbs.clickHandler(event,{url:'http://service.weibo.com/share/share.php?title=%{TITLE}&amp;url=%{URL}&amp;language=zh_cn'});">新浪微博</a></li><li><a class="ibm-share-renren" tabindex="-1" role="button" dojoattrid="3" rel="人人网" title="人人网" href="http://share.renren.com/share/buttonshare?title=%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F&amp;link=https%3A%2F%2Fwww.ibm.com%2Fdeveloperworks%2Fcn%2Flinux%2Fl-fuse%2F" onclick="ibmweb.sbs.clickHandler(event,{url:'http://share.renren.com/share/buttonshare?title=%{TITLE}&amp;link=%{URL}'});">人人网</a></li><li><a class="dwcn-tencent-link" tabindex="-1" role="button" dojoattrid="4" rel="腾讯微博" title="腾讯微博" href="http://v.t.qq.com/share/share.php?title=%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F&amp;url=https%3A%2F%2Fwww.ibm.com%2Fdeveloperworks%2Fcn%2Flinux%2Fl-fuse%2F" onclick="ibmweb.sbs.clickHandler(event,{url:'http://v.t.qq.com/share/share.php?title=%{TITLE}&amp;url=%{URL}'});">腾讯微博</a></li><li><a class="dwcn-sohu-link" tabindex="-1" role="button" dojoattrid="5" rel="搜狐微博" title="搜狐微博" href="http://t.sohu.com/third/post.jsp?title=%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%20&amp;link=https%3A%2F%2Fwww.ibm.com%2Fdeveloperworks%2Fcn%2Flinux%2Fl-fuse%2F" onclick="ibmweb.sbs.clickHandler(event,{url:'http://t.sohu.com/third/post.jsp?title=%{TITLE}%20&amp;link=%{URL}'});">搜狐微博</a></li><li><a class="dwcn-netease-link" tabindex="-1" role="button" dojoattrid="6" rel="网易微博" title="网易微博" href="http://t.163.com/article/user/checkLogin.do?info=%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%20https%3A%2F%2Fwww.ibm.com%2Fdeveloperworks%2Fcn%2Flinux%2Fl-fuse%2F" onclick="ibmweb.sbs.clickHandler(event,{url:'http://t.163.com/article/user/checkLogin.do?info=%{TITLE}%20%{URL}'});">网易微博</a></li><li><a class="ibm-share-digg" title="Digg" href="http://digg.com/submit?phase=2&amp;url=https%3A%2F%2Fwww.ibm.com%2Fdeveloperworks%2Fcn%2Flinux%2Fl-fuse%2F&amp;title=%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F" rel="digg" dojoattrid="7" role="button" tabindex="-1" onclick="ibmweb.sbs.clickHandler(event,{url:'http://digg.com/submit?phase=2&amp;url=%{URL}&amp;title=%{TITLE}'});">Digg</a></li><li><a class="ibm-share-facebook" title="Facebook" href="http://www.facebook.com/sharer.php?u=https%3A%2F%2Fwww.ibm.com%2Fdeveloperworks%2Fcn%2Flinux%2Fl-fuse%2F&amp;t=%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F" rel="facebook" dojoattrid="8" role="button" tabindex="-1" onclick="ibmweb.sbs.clickHandler(event,{url:'http://www.facebook.com/sharer.php?u=%{URL}&amp;t=%{TITLE}'});">Facebook</a></li><li><a class="ibm-share-twitter" title="Twitter" href="http://twitter.com/?status=https%3A%2F%2Fwww.ibm.com%2Fdeveloperworks%2Fcn%2Flinux%2Fl-fuse%2F%20-%20%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F" rel="twitter" dojoattrid="9" role="button" tabindex="-1" onclick="ibmweb.sbs.clickHandler(event,{url:'http://twitter.com/?status=%{URL}%20-%20%{TITLE}'});">Twitter</a></li><li><a class="ibm-share-delicious" title="Delicious" href="http://delicious.com/post?url=https%3A%2F%2Fwww.ibm.com%2Fdeveloperworks%2Fcn%2Flinux%2Fl-fuse%2F&amp;title=%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F" rel="delicious" dojoattrid="10" role="button" tabindex="-1" onclick="ibmweb.sbs.clickHandler(event,{url:'http://delicious.com/post?url=%{URL}&amp;title=%{TITLE}'});">Delicious</a></li><li><a class="ibm-share-linkedin" title="Linked In" href="http://www.linkedin.com/shareArticle?mini=true&amp;url=https%3A%2F%2Fwww.ibm.com%2Fdeveloperworks%2Fcn%2Flinux%2Fl-fuse%2F&amp;title=%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F" rel="linkedin" dojoattrid="11" role="button" tabindex="-1" onclick="ibmweb.sbs.clickHandler(event,{url:'http://www.linkedin.com/shareArticle?mini=true&amp;url=%{URL}&amp;title=%{TITLE}'});">Linked In</a></li></ul></div></div></div>
+<div id="fdiv" class="ibm-access"></div><!-- MASTHEAD_END -->
+
+<!-- LAYOUT -->
+<!-- LEADSPACE_BEGIN --> 
+<div role="main" id="ibm-access-cntr"><div id="ibm-leadspace-head">
+	<!-- LEADSPACE_BODY_BEGIN --> 
+	<div id="ibm-leadspace-body">
+		<!-- Navigation_Trail_BEGIN -->
+      <ul aria-label="Bread Crumbs" role="navigation" id="ibm-navigation-trail"><li><a href="http://www.ibm.com/developerworks/cn/">developerWorks 中国</a></li><li><a href="http://www.ibm.com/developerworks/cn/topics/">技术主题</a></li><li><a href="http://www.ibm.com/developerworks/cn/linux/">Linux</a></li><li><a href="http://www.ibm.com/developerworks/cn/views/linux/libraryview.jsp">文档库</a></li></ul>
+		<!-- END_Navigation_Trail -->
+			<!-- Title_Subtitle -->
+			<h1>使用 FUSE 开发自己的文件系统</h1><p><em><span>无需进行内核编程</span></em></p>
+	</div>
+	<!-- LEADSPACE_BODY_END --> 
+	<!-- SUMMARY_BEGIN -->
+	<div id="dw-summary-area" class="dw-summary-columns">
+		<div class="ibm-col-6-4">
+		<p>使用用户空间的文件系统（FUSE），您无需理解文件系统的内幕，也不用学习内核模块编程的知识，就可以开发用户空间的文件系统框架。本文是一
+篇简单的逐步介绍的指南，内容包括安装、定制和启用 FUSE 和 AFS，这样您就可以在 Linux® 
+的用户空间中创建自己的功能完备的文件系统了。</p>
+		<p class="ibm-no-print ibm-ind-link">
+
+			
+			<span id="nCmts"><span>1</span><img class="dw-cmts-arrow" alt="" src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/dw-cmts-arrow.png" height="7" width="7"> <a href="#icomments" class="dw-cmt-link">评论：</a></span>
+		</p>
+		</div>
+		<div class="ibm-col-6-2 dw-toc-margin">
+			<p class="dw-summary-author"><a href="#authorN10026" class="ibm-popup-link" onclick="ibmweb.overlay.show('authorN10026',this);return false;">Sumit Singh</a> (<a href="mailto:sumising@in.ibm.com?subject=%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F">sumising@in.ibm.com</a>), 软件工程师, IBM</p>
+<div id="authorN10026" class="ibm-common-overlay"><div class="ibm-head"><p><a href="#close" class="ibm-common-overlay-close">关闭 [x]</a></p></div><div class="ibm-body"><div class="ibm-main"><div class="ibm-title"><!--this is where the h2 usually
+                                    goes--></div><div class="ibm-container ibm-alternate"><div class="ibm-container-body">
+<p><!--.-->
+Sumit Singh 是 IBM 企业文件系统组的一名软件工程师。他的主要工作是为 AFS 提供 L3 支持。</p><br><br></div></div></div></div><div class="ibm-footer"><!----></div></div>
+			<p class="dw-summary-date">2006 年 4 月 10 日</p>
+			
+
+
+			<div aria-hidden="true" class="ibm-container" id="dw-toc"><div class="ibm-container-body"><ul class="ibm-twisty"><li><a href="#toggle" class="ibm-twisty-trigger ibm-twisty-trigger-closed"><img src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/c.gif" alt="+"></a><span class="ibm-twisty-head">内容</span><div style="display: none;" class="ibm-twisty-body"><ul style="font-size:0.8em" class="ibm-link-list">
+<li><a class="ibm-anchor-down-em-link" href="#N10042">FUSE 简介</a></li>
+<li><a class="ibm-anchor-down-em-link" href="#N10062">展开 FUSE</a></li>
+<li><a class="ibm-anchor-down-em-link" href="#N10088">编译并安装 FUSE</a></li>
+<li><a class="ibm-anchor-down-em-link" href="#N100B4">定制文件系统</a></li>
+<li><a class="ibm-anchor-down-em-link" href="#N1021D">定义 RX RPC 层</a></li>
+<li><a class="ibm-anchor-down-em-link" href="#N1024C">创建客户机和存根文件</a></li>
+<li><a class="ibm-anchor-down-em-link" href="#N1028C">结束语</a></li>
+<li><a class="ibm-anchor-down-em-link" href="#download">下载</a></li>
+<li><a class="ibm-anchor-down-em-link" href="#resources">参考资料 </a></li>
+<li><a class="ibm-anchor-down-em-link" href="#icomments">评论</a></li></ul></div></li></ul></div></div>
+		</div>
+	</div>
+	<!-- SUMMARY_END -->
+</div><div id="ibm-pcon">
+
+<!-- BEGIN_IBM-CONTENT -->
+<div id="ibm-content">
+
+<!-- BEGIN_IBM-CONTENT-BODY -->
+<div id="ibm-content-body">
+
+<!-- BEGIN_IBM-CONTENT-MAIN -->
+<div id="ibm-content-main">
+
+<!-- 1_1_COLUMN_BEGIN -->
+<div class="ibm-columns">
+<div class="ibm-col-1-1">
+
+<p>文件系统是一种用来存储和组织计算机文件、目录及其包含的数据的方法，它使文件、目录以及数据的查找和访问得到简化。如果您正在使用一台计算机，很
+可能使用了多个文件系统。文件系统能提供丰富的扩展能力。它可以编写成底层文件系统的一个封装程序，从而对其中的数据进行管理，并提供一个增强的、具有丰
+富特性的文件系统（例如 cvsfs-fuse，它为 CVS 提供了一个文件系统的接口；或 Wayback 
+文件系统，它提供了一种用于保留原始数据文件的文件备份机制）。</p><p>在用户空间的文件系统出现之前，文件系统的开发曾是内核开发人员的工作。创
+建文件系统需要了解内核编程和内核技术（例如 vfs）方面的知识。调试则需要 C 和 C++ 
+方面的专业技能。但是其他开发人员需要熟练地操作文件系统以添加个性化特性（例如添加历史记录或转发缓存）及对其改进。</p><h2 id="N10042">FUSE 简介</h2><p>使用 FUSE 您可以开发功能完备的文件系统：其具有简单的 API 库，可以被非特权用户访问，并可以安全的实施。更重要的是，FUSE 以往的表现充分证明了其稳定性。</p><p>使用 FUSE，您可以像可执行二进制文件一样来开发文件系统，它们需要链接到 FUSE 库上 —— 换言之，这个文件系统框架并不需要您了解文件系统的内幕和内核模块编程的知识。</p><p>就文件系统来说，用户空间的文件系统就不再是新奇的设计了。用户空间文件系统的商业实现与学术实现的实例包括：</p><ul class="ibm-bullet-list"><li>LUFS 是一个混合用户空间的文件系统框架，它对用于任何应用程序无数的文件系统提供透明支持。大部分LUFS 包括一个内核模块和一个用户空间的守护进程。从根本上来说，它将大部分 VFS 调用都委托给一个专用的守护进程来处理。</li><li>UserFS 让用户进程可以像普通的文件系统一样进行加载。这种概念性的原型提供了 ftpfs，这可以使用文件系统接口提供匿名 FTP 访问。</li><li>Ufo Project 是为 Solaris 提供的一个全局文件系统，它允许用户将远程文件真正当作本地文件一样对待。</li><li>OpenAFS 是 Andrew FileSystem 的一个开源版本。</li><li>CIFS 是 Common Internet FileSystem 的简称。</li></ul><p>与
+这些商业实现和学术实现不同，FUSE 将这种文件系统的设计能力带到了 Linux 中来。由于 FUSE 使用的是可执行程序（而不像 LUFS 
+一样使用的是共享对象），因此可以简化程序的调试和开发。FUSE 可以在 2.4.x 和 2.6.x 的内核上使用，现在可以支持 Java™ 
+绑定，因此您可以不必限定于使用 C 和 C++ 来编写文件系统了。（有关更多使用 FUSE 的用户层的文件系统的内容，请参阅 <a href="#resources">参考资料</a>。）</p><p>要在 FUSE 中创建一个文件系统，您需要安装一个 FUSE 内核模块，然后使用 FUSE 库和 API 来创建自己的文件系统。</p><div class="ibm-alternate-rule"><hr></div><p class="ibm-ind-link ibm-back-to-top"><a href="#ibm-pcon" class="ibm-anchor-up-link">回页首</a></p><h2 id="N10062">展开 FUSE</h2><p>
+要开发一个文件系统，首先请下载 FUSE 的源代码（请参阅 <a href="#resources">参考资料</a>）并展开这个包：<code>tar -zxvf fuse-2.2.tar.gz</code>。这会创建一个 FUSE 目录，其中保存的是源代码。fuse-2.2 目录的内容如下：
+</p><ul class="ibm-bullet-list"><li><strong>./doc</strong> 包含了与 FUSE 有关的文档。现在，这只有一个文件 how-fuse-works。
+</li><li><strong>./kernel</strong> 包含了 FUSE 内核模块的源代码（对于使用 FUSE 开发文件系统来说，您当然不用懂得这些代码的机制）。
+</li><li><strong>./include</strong> 包含了 FUSE API 头，您需要这些文件来创建文件系统。您现在唯一需要的就是 fuse.h。
+</li><li><strong>./lib</strong> 中存放的是创建 FUSE 库的源代码，您需要将它们与您的二进制文件链接在一起来创建文件系统。
+</li><li><strong>./util</strong> 中存放的是 FUSE 工具库的源代码。
+</li><li><strong>./example</strong> 当然包含的是一些供您参考的例子，例如 fusexmp.null 和 hello 文件系统。</li></ul><div class="ibm-alternate-rule"><hr></div><p class="ibm-ind-link ibm-back-to-top"><a href="#ibm-pcon" class="ibm-anchor-up-link">回页首</a></p><h2 id="N10088">编译并安装 FUSE</h2><ol><li>在 fuse-2.2 目录中运行 configure 脚本： <code>./configure</code>。这会创建所需要的 makefile 等内容。</li><li>运行 <code>./make</code> 来编译库、二进制文件和内核模块。查看 kernel 目录中的文件 ./kernel/fuse.ko —— 这是内核模块文件。还要查看 lib 目录中的 fuse.o、mount.o 和 helper.o。</li><li>运行 <code>./make install</code> 完成 FUSE 的安装。
+<br><br><strong>另外一种选择</strong>：如果您希望使用 <code>insmod</code> 自己将这个模块安装到内核中，就可以跳过这个步骤。例如：<code>/usr/local/sbin/insmod ./kernel/fuse.ko</code> 或 <code>/sbin/insmod ./kernel/fuse.ko</code>。记住要使用 root 特权才能安装所需要的模块。</li></ol><p>
+如果希望，只在一个步骤中就可以完成上面的步骤。在 fuse-2.2 目录中，运行 <code>./configure; make; make install;</code>。
+<br><br><strong>重要提示</strong>：在编译 FUSE 时，系统中需要有内核头文件或源代码。为了简单起见，请确保将内核源代码放到 /usr/src/ 目录中。
+</p><div class="ibm-alternate-rule"><hr></div><p class="ibm-ind-link ibm-back-to-top"><a href="#ibm-pcon" class="ibm-anchor-up-link">回页首</a></p><h2 id="N100B4">定制文件系统</h2><p>
+现在让我们来创建一个文件系统，这样就可以使用一个较旧的 Linux 内核来访问一个具有最新内核的 Linux 系统上的 AFS 
+空间了。您需要两个进程：一个是在较旧的 Linux 内核上运行的服务器进程，另外一个是在具有最新内核的 Linux 系统上运行的一个 FUSE 
+客户机进程。不论何时请求到达您的 FUSE 客户机进程上时，它都会与远程服务器进程进行联系。为了进行通信，这个文件系统使用了 RX RPC 
+代码，这是 AFS 的一部分，因此您需要编译 OpenAFS。（图 1 给出了对这个 AFS 文件系统的概述。）</p><h5 id="N100BC">图 1. AFS-FUSE 文件系统概述</h5><img alt="AFS-FUSE 文件系统概述" src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/image1.gif" width="572"><h3 id="N100C5">编译 OpenAFS</h3><ol><li>下载 OpenAFS Linux 源代码并展开源代码。
+
+<p>在展开源代码的目录中，运行 <code>./make ./configure --enable-transarc-paths</code>。如果 <code>./configure</code> 无法理解编译使用的 sysname，就请使用 <code>--with-afs-sysname</code> 选项提供正确的 sysname。</p><p>要在 Linux 2.4 内核上编译，请使用下面的命令：<code>./configure --enable-transarc-paths --with-afs-sysname=i386_linux24</code>。</p></li><li>运行 <code>./make</code>，然后运行 <code>./make dest</code>。检查在编译过程中出现的错误。
+
+<p>如果编译过程一切顺利，那么 AFS 源代码树就可以使用了。现在，您需要准备一个开发目录 afsfuse。在这个目录中，创建另外两个目录：
+</p><ul class="ibm-bullet-list"><li><strong>include</strong> 目录包括 OpenAFS 和 FUSE 的 include 目录的头文件。</li><li><strong>lib</strong> 目录包含 OpenAFS 和 FUSE 的库文件。</li></ul></li><li>拷贝头文件和库文件。
+
+<p>首先从 OpenAFS 目录中拷贝 AFS 的头文件，方法是将 dest\i386_linux24\include 
+中的目录和文件全部拷贝到 include 目录中。然后将 fuse-2.2 目录中的 FUSE 的 include 
+目录拷贝到这个目录中。对库文件也重复相同的步骤，将它们全部拷贝到 lib 目录中。
+</p></li><li>创建应用程序的结构。
+
+<p>对于这两组进程，您需要使用两组文件。使用命名规则 <strong>afsfuse_client.*</strong> 来命名客户机进程的文件；使用命名规则 <strong>afsfuse_server.*</strong> 来命名服务器进程的文件。
+</p><p>这样您就有了一个 afsfuse_client.c 文件，其中包含了 FUSE 进程的代码；一个 afsfuse_server.c
+ 文件，其中包含了在远程机器上运行的进程使用的服务器代码；一个 makefile；一个 rxgen 文件，用来创建 RPC 头文件（例如 
+afsfuse.xg）。
+</p><p>afsfuse_client.c 文件可以创建 afsfuse_client 进程代码， FUSE 文件系统调用它来创建文件系统（使用 fuse-2.2/example/fusexmp.c 来创建这个文件）。
+</p></li></ol><h3 id="N10101">定义需要的函数</h3><p>
+要使用 FUSE 来创建一个文件系统，您需要声明一个 <code>fuse_operations</code> 类型的结构变量，并将其传递给 <code>fuse_main</code> 函数。<code>fuse_operations</code> 结构中有一个指针，指向在执行适当操作时需要调用的函数。清单 1 给出了 <code>fuse_operations</code> 结构。</p><h5 id="N10115">清单 1. fuse_operation 结构中需要的函数</h5><div class="codesection"><pre class="displaycode">struct fuse_operations {
+    int (*getattr) (const char *, struct stat *);
+    int (*readlink) (const char *, char *, size_t);
+    int (*getdir) (const char *, fuse_dirh_t, fuse_dirfil_t);
+    int (*mknod) (const char *, mode_t, dev_t);
+    int (*mkdir) (const char *, mode_t);
+    int (*unlink) (const char *);
+    int (*rmdir) (const char *);
+    int (*symlink) (const char *, const char *);
+    int (*rename) (const char *, const char *);
+    int (*link) (const char *, const char *);
+    int (*chmod) (const char *, mode_t);
+    int (*chown) (const char *, uid_t, gid_t);
+    int (*truncate) (const char *, off_t);
+    int (*utime) (const char *, struct utimbuf *);
+    int (*open) (const char *, struct fuse_file_info *);
+    int (*read) (const char *, char *, size_t, off_t, struct fuse_file_info *);
+    int (*write) (const char *, const char *, size_t, off_t,struct fuse_file_info *);
+    int (*statfs) (const char *, struct statfs *);
+    int (*flush) (const char *, struct fuse_file_info *);
+    int (*release) (const char *, struct fuse_file_info *);
+    int (*fsync) (const char *, int, struct fuse_file_info *);
+    int (*setxattr) (const char *, const char *, const char *, size_t, int);
+    int (*getxattr) (const char *, const char *, char *, size_t);
+    int (*listxattr) (const char *, char *, size_t);
+    int (*removexattr) (const char *, const char *);
+};</pre></div><p>这些操作并非都是必需的，但是一个文件系统要想正常工作，就需要其中的很多函数。您可以实现一个具有特殊目的的 <code>.flush</code>、<code>.release</code> 或 <code>.fsync</code> 方法的功能完备的文件系统。（本文不会介绍任何 <code>xattr</code> 函数。）清单 1 中给出的函数如下所示：</p><ul class="ibm-bullet-list"><li><code>getattr: int (*getattr) (const char *, struct stat *);</code><br>
+这个函数与 <code>stat()</code> 类似。<code>st_dev</code> 和 <code>st_blksize</code> 域都可以忽略。<code>st_ino</code> 域也会被忽略，除非在执行 mount 时指定了 <code>use_ino</code> 选项。</li><li><code>readlink: int (*readlink) (const char *, char *, size_t);</code><br>
+这个函数会读取一个符号链接的目标。缓冲区应该是一个以 null 结束的字符串。缓冲区的大小参数包括这个 null 结束字符的空间。如果链接名太长，不能保存到缓冲区中，就应该被截断。成功时的返回值应该是 “0”。</li><li><code>getdir: int (*getdir) (const char *, fuse_dirh_t, fuse_dirfil_t);</code><br>
+这个函数会读取一个目录中的内容。这个操作实际上是在一次调用中执行 <code>opendir()</code>、<code>readdir()</code>、...、<code>closedir()</code> 序列。对于每个目录项来说，都应该调用 <code>filldir()</code> 函数。</li><li><code>mknod: int (*mknod) (const char *, mode_t, dev_t);</code><br>
+这个函数会创建一个文件节点。此处没有 <code>create()</code> 操作；<code>mknod()</code> 会在创建非目录、非符号链接的节点时调用。</li><li><code>mkdir: int (*mkdir) (const char *, mode_t);</code><br><code>rmdir: int (*rmdir) (const char *);</code><br>
+这两个函数分别用来创建和删除一个目录。</li><li><code>unlink: int (*unlink) (const char *);</code><br><code>rename: int (*rename) (const char *, const char *);</code><br>
+这两个函数分别用来删除和重命名一个文件。</li><li><code>symlink: int (*symlink) (const char *, const char *);</code><br>
+这个函数用来创建一个符号链接。</li><li><code>link: int (*link) (const char *, const char *);</code><br>
+这个函数创建一个到文件的硬链接。</li><li><code>chmod: int (*chmod) (const char *, mode_t);</code><br><code>chown: int (*chown) (const char *, uid_t, gid_t);</code><br><code>truncate: int (*truncate) (const char *, off_t);</code><br><code>utime: int (*utime) (const char *, struct utimbuf *);</code><br>
+这 4 个函数分别用来修改文件的权限位、属主和用户、大小以及文件的访问/修改时间。</li><li><code>open: int (*open) (const char *, struct fuse_file_info *);</code><br>
+这是文件的打开操作。对  <code>open()</code> 函数不能传递创建或截断标记（<code>O_CREAT</code>、<code>O_EXCL</code>、<code>O_TRUNC</code>）。这个函数应该检查是否允许执行给定的标记的操作。另外，<code>open()</code> 也可能在 <code>fuse_file_info</code> 结构中返回任意的文件句柄，这会传递给所有的文件操作。</li><li><code>read: int (*read) (const char *, char *, size_t, off_t, struct fuse_file_info *);</code><br>
+这个函数从一个打开文件中读取数据。除非碰到 EOF 或出现错误，否则 <code>read()</code> 应该返回所请求的字节数的数据；否则，其余数据都会被替换成 0。一个例外是在执行 mount 命令时指定了 <code>direct_io</code> 选项，在这种情况中 <code>read()</code> 系统调用的返回值会影响这个操作的返回值。</li><li><code>write: int (*write) (const char *, const char *, size_t, off_t, struct fuse_file_info *);</code><br>
+这个函数将数据写入一个打开的文件中。除非碰到 EOF 或出现错误，否则 <code>write()</code> 应该返回所请求的字节数的数据。一个例外是在执行 mount 命令时指定了 <code>direct_io</code> 选项（这于 <code>read()</code> 操作的情况类似）。</li><li><code>statfs: int (*statfs) (const char *, struct statfs *);</code><br>
+这个函数获取文件系统的统计信息。<code>f_type</code> 和 <code>f_fsid</code> 域都会被忽略。</li><li><code>flush: int (*flush) (const char *, struct fuse_file_info *);</code><br>
+这表示要刷新缓存数据。它并不等于 <code>fsync()</code> 函数 —— 也不是请求同步脏数据。每次对一个文件描述符执行 <code>close()</code> 函数时，都会调用 <code>flush()</code>；因此如果文件系统希望在 <code>close()</code> 中返回写错误，并且这个文件已经缓存了脏数据，那么此处就是回写数据并返回错误的好地方。由于很多应用程序都会忽略 <code>close()</code> 错误，因此这通常用处不大。</li></ul><p><strong>注意</strong>：我们也可以对一个 <code>open()</code> 多次调用 <code>flush()</code> 方法。如果由于调用了 <code>dup()</code>、<code>dup2()</code> 或 <code>fork()</code> 而产生多个文件描述符指向一个打开文件的情况，就可能会需要这种用法。我们无法确定哪个 flush 操作是最后一次操作，因此每个 flush 都应该同等地对待。多个写刷新序列相当罕见，因此这并不是什么问题。</p><ul class="ibm-bullet-list"><li><code>release: int (*release) (const char *, struct fuse_file_info *);</code><br>
+这个函数释放一个打开文件。<code>release()</code> 是在对一个打开文件没有其他引用时调用的 —— 此时所有的文件描述符都会被关闭，所有的内存映射都会被取消。对于每个 <code>open()</code> 调用来说，都必须有一个使用完全相同标记和文件描述符的 <code>release()</code> 调用。对一个文件打开多次是可能的，在这种情况中只会考虑最后一次 release，然后就不能再对这个文件执行更多的读/写操作了。release 的返回值会被忽略。</li><li><code>fsync: int (*fsync) (const char *, int, struct fuse_file_info *);</code><br>
+这个函数用来同步文件内容。如果 <code>datasync</code> 参数为非 0，那么就只会刷新用户数据，而不会刷新元数据。</li><li><code>setxattr: int (*setxattr) (const char *, const char *, const char *, size_t, int);</code><br><code>getxattr: int (*getxattr) (const char *, const char *, char *, size_t);</code><br><code>listxattr: int (*listxattr) (const char *, char *, size_t);</code><br><code>removexattr: int (*removexattr) (const char *, const char *);</code><br>
+这些函数分别用来设置、获取、列出和删除扩展属性。</li></ul><h3 id="N10211">获得的文件系统</h3><p>您的文件系统将如下所示：</p><div class="codesection"><pre class="displaycode">afsfuse_client   &lt;--RX[RPC]--&gt;   afsfuse_server</pre></div><p>
+afsfuse_client 会将传递给它的文件系统调用转发给另外一台机器上的 afsfuse_server。afsfuse_server 
+会对客户机传递给它的所有请求进行处理，并将结果返回给客户机。它会执行所有必需的工作。RPC 使用的机制是 
+RX。数据或原数据都不会涉及缓存的问题。
+</p><div class="ibm-alternate-rule"><hr></div><p class="ibm-ind-link ibm-back-to-top"><a href="#ibm-pcon" class="ibm-anchor-up-link">回页首</a></p><h2 id="N1021D">定义 RX RPC 层</h2><p>在
+继续之前，您需要先定义 RX RPC 层。要实现这种功能，请为 rxgen 创建一个 .xg 文件，用来描述代理和与 
+afsfuse_client.c 和 afsfuse_server.c 进行链接的桩代码。清单 2 显示了如何创建一个具有如下内容的 
+afsfuse.xg 文件：</p><h5 id="N10226">清单 2. 创建 afsfuse.xg 文件</h5><div class="codesection"><pre class="displaycode">#define MYMAXPATH 512
+%#include &lt;rx/rx.h&gt;
+%#include &lt;/rx_null.h &gt;
+%#define SAMPLE_SERVER_PORT 5000
+%#define SAMPLE_SERVICE_PORT 0
+/* i.e. user server's port */
+%#define SAMPLE_SERVICE_ID 4 /* Maximum number of requests that will be handled by this
+                                service simultaneously */
+/* This number will also be guaranteed to execute in parallel if no services' requests
+   are being processed */
+%#define SAMPLE_MAX 2 /* Minimum number of requests that are guaranteed to be handled
+                         immediately */
+%#define SAMPLE_MIN 1 /* Index of the "null" security class in the sample service. This
+                         must be 0 (there are N classes, numbered from 0. In this case,
+                         N is 1) */
+%#define SAMPLE_NULL 0 /********************** fuse4_file_info taken from fuse.h the
+                        rxgen does not understands fuse.h  mystat taken from man 2
+                        mystat these are required again rxgen does not understand the
+                        struct paras and will bump.. **********************/
+struct my_file_info { /** Open flags. Available in open() and release() */
+                     int flags; /** File handle. May be filled in by filesystem in
+                                    open(). Available in all other file operations */
+                     unsigned int fh; /** In case of a write operation indicates if
+                                          this was caused by a writepage */
+                     int writepage;
+                    };
+struct mystatfs {
+                    afs_uint32 f_type; /* type of filesystem (see below) */
+                    afs_uint32 f_bsize; /* optimal transfer block size */
+                    afs_uint32 f_blocks; /* total data blocks in file system */
+                    afs_uint32 f_bfree; /* free blocks in fs */
+                    afs_uint32 f_bavail; /* free blocks avail to non-superuser */
+                    afs_uint32 f_files; /* total file nodes in file system */
+                    afs_uint32 f_ffree; /* free file nodes in fs */
+                    afs_uint32 f_fsid1; /* file system id */
+                    afs_uint32 f_fsid2; /* file system id */
+                    afs_uint32 f_namelen; /* maximum length of filenames */
+                    afs_uint32 f_spare[6]; /* spare for later */
+                };
+struct mystat {
+                    afs_uint32 st_dev; /* device */
+                    afs_uint32 st_ino; /* inode */
+                    afs_uint32 st_mode; /* protection */
+                    afs_uint32 st_nlink; /* number of hard links */
+                    afs_uint32 st_uid; /* user ID of owner */
+                    afs_uint32 st_gid;/* group ID of owner */
+                    afs_uint32 st_rdev; /* device type (if inode device) */
+                    afs_uint32 st_size; /* total size, in bytes */
+                    afs_uint32 st_blksize; /* blocksize for filesystem I/O */
+                    afs_uint32 st_blocks; /* number of blocks allocated */
+                    afs_uint32 st_atim; /* time of last access */
+                    afs_uint32 st_mtim; /* time of last modification */
+                    afs_uint32 st_ctim; /* time of last change */
+                };
+struct my_dirhandle{
+                    afs_uint32 type;
+                    afs_uint32 inode;
+                    char name[MYMAXPATH];
+                };
+typedef my_dirhandle bulkmydirhandles&lt;&gt;;
+ /*********************phase 1 functions *********************************************/
+rxc_getattr(IN string mypath&lt;MYMAXPATH&gt;, IN int dummy) split = 1;
+rxc_getdirWrapper(IN string path&lt;MYMAXPATH&gt;, OUT bulkmydirhandles *handles) = 2;
+rxc_read(IN string path&lt;MYMAXPATH&gt;;, IN afs_uint32 size, IN afs_uint32 offset,
+         IN struct my_file_info *fi) split = 3;
+rxc_open(IN string path&lt;MYMAXPATH&gt;, IN int flags, OUT u_int *hd) = 4;
+rxc_write(IN string path&lt;MYMAXPATH&gt;,IN afs_uint32 size, IN afs_uint32 offset,
+          IN struct my_file_info *fi) split = 5;
+rxc_chmod(IN string path&lt;MYMAXPATH&gt;, IN afs_uint32 mode) = 6;
+rxc_chown(IN string path&lt;MYMAXPATH&gt;, IN afs_uint32 uid, IN afs_uint32 gid) = 7;
+rxc_utime(IN string path&lt;MYMAXPATH&gt;, IN afs_uint32 at,IN afs_uint32 mt) = 8;
+rxc_mknod(IN string path&lt;MYMAXPATH&gt;, afs_uint32 mode, afs_uint32 rdev) = 9 ;
+rxc_mkdir(IN string path&lt;MYMAXPATH&gt;, IN afs_uint32 mode) = 10;
+rxc_unlink(IN string path&lt;MYMAXPATH&gt;) = 11 ;
+rxc_rmdir(IN string path&lt;MYMAXPATH&gt;) = 12;
+rxc_rename(IN string from&lt;MYMAXPATH&gt;, IN string to&lt;MYMAXPATH&gt;) = 13;
+rxc_truncate(IN string path&lt;MYMAXPATH&gt;, IN afs_uint32 size) = 14;
+rxc_release(IN string path&lt;MYMAXPATH&gt;, IN struct my_file_info *fi) = 15;
+rxc_readlink(IN string path&lt;MYMAXPATH&gt;, IN afs_uint32 size,OUT string
+             data&lt;MYMAXPATH&gt;) = 16;
+rxc_symlink(IN string from&lt;MYMAXPATH&gt;, IN string to&lt;MYMAXPATH&gt;) = 17;
+rxc_link(IN string from&lt;MYMAXPATH&gt;, IN string to&lt;MYMAXPATH&gt;) = 18;
+rxc_statfs(IN string path&lt;MYMAXPATH&gt;, OUT struct mystatfs *stbuf) = 19;
+rxc_fsync(IN string path &lt;MYMAXPAT&gt;, IN int isdatasync, IN struct my_file_info
+          *fi) = 20 ;
+rxc_flush(IN string path &lt;MYMAXPATH&gt;, IN struct my_file_info *fi) = 21 ;</pre></div><p>在定义 RX RPC 层时，注意以下几点：
+</p><ul class="ibm-bullet-list"><li>在 <code>statfs</code>、<code>stat</code> 和 <code>fuse_file_info</code> 基础上定义了 <code>mystatfs</code>、<code>mystat</code> 和 <code>my_file_info</code> 的封装程序。它们都会使用所生成的 XDR 代码进行转换。（XDR（External Data Representation，外部数据表示）允许采用一种与体系结构无关的方式进行封装，这样就可以在异构计算机系统之间传输数据了。）
+</li><li>您几乎要为 <code>fuse_operations</code> 结构的每个成员都定义一个函数，它们几乎具有相同的参数，因为 afsfuse_client 的工作就是负责接管 FUSE 文件系统中的调用，并将这些调用传递给 afsfuse_server。
+</li><li>您已经硬编码了一些值，例如 <code>MYMAXPATH</code>，这应该从系统中获得 —— 硬编码是为了简单性起见而这样做的。
+</li></ul><div class="ibm-alternate-rule"><hr></div><p class="ibm-ind-link ibm-back-to-top"><a href="#ibm-pcon" class="ibm-anchor-up-link">回页首</a></p><h2 id="N1024C">创建客户机和存根文件</h2><p>
+接下来使用 rxgen 编译 afsfuse.xg 文件，从而创建客户机和存根文件。从包含 afsfuse_server 和 afsfuse_client 的源代码的目录中，运行命令 <code>openafs-1.2.13/i386_linux24/dest/bin/rxgen afsfuse.xg</code>。这会创建以下文件：</p><ul class="ibm-bullet-list"><li>
+afsfuse.cs.c 是与 afsfuse_client.c 进行链接的客户机存根代码。
+</li><li>
+afsfuse.h 是包含您的 FUSE RX 代码的各种定义的头文件。
+</li><li>
+afsfuse.ss.c 是与 afsfuse_server 代码进行链接的服务器存根代码（代理代码）。
+</li><li>
+afsfuse.xdr.c 包含了用来处理在 afsfuse.xg 中定义的 3 个结构所使用的代码。
+</li></ul><p>
+现在为 afsfuse_client.c 和 afsfuse_server.c 添加一些执行实际工作的代码。大部分调用都如下所示：
+</p><ul class="ibm-bullet-list"><li><code>Our_call_in_afs_fuse_client()</code>。分析参数并准备执行 RPC。对 RX [RPC] 调用 afsfuse_server。组合参数。将这些值拷贝到传递给这个函数的行参数中。
+</li><li><code>Our_call_in_afs_fuse_server()</code>。组合参数。调用本地文件系统或 AFS 特有的函数。分析参数准备执行 RPC。生成 RX RPC 调用。
+</li></ul><p>afsfuse_client.c 调用如下所示：</p><div class="codesection"><pre class="displaycode">int afsfuse_readlink(const char *path, char *buf, size_t size){
+    rx_connection *local&amp; int ret&amp; char *buffer = malloc (512)&amp;
+    memset(buffer,0,512)&amp; memset(buf,0,size)&amp; local = getconnection()&amp;
+    ret = rxc_rxc_readlink(local,path,512,&amp;buffer) // rpc call
+         relconnection(local)&amp;
+         strncpy(buf,buffer,512-1)&amp;
+        //&lt;- demarshall the parametrs
+        return ret&amp;
+    }</pre></div><p>afsfuse_server.c 调用如下所示：</p><h5 id="N10274">清单 3. afsfuse_server.c 调用</h5><div class="codesection"><pre class="displaycode">int rxc_rxc_readlink( struct rx_call *call, char * path, afs_uint32 size, char**data)
+    { int ret&amp; char lbuff[512] ={0}&amp;
+    translatePath(path,lbuff)&amp; //&lt;- make filesystem call
+     *data = malloc(512)&amp;
+     res = readlink(lbuff, *data, 512-1)&amp;
+     if(res == -1) return -errno&amp; (*data)[res] = '\0'&amp; return 0&amp;
+    }</pre></div><p>简单地，您可以在其他函数中添加代码来对文件系统进行增强。
+</p><p>您需要创建一个 makefile 来编译代码。记住在编译 afsfuse_client 的代码时包括以下选项：<code>-D_FILE_OFFSET_BITS=64</code> 和 <code>-DFUSE_USE_VERSION=22</code>。</p><h5 id="N10285">清单 4. 生成编译客户机代码使用的 makefile</h5><div class="codesection"><pre class="displaycode">SRCDIR=./ LIBRX=${SRCDIR}lib/librx.a
+LIBS=${LIBRX} ${SRCDIR}lib/liblwp.a
+#CC = g++
+CFLAGS=-g -I. -I${SRCDIR}include -I${SRCDIR}include/fuse/ -DDEBUG ${XCFLAGS}
+    -D_FILE_OFFSET_BITS=64 -DFUSE_USE_VERSION=22
+afsfuse_client: afsfuse_client.o afsfuse.xdr.o ${LIBS} bulk_io.o afsfuse.cs.o
+    ${CC} ${CFLAGS} -o afsfuse_client afsfuse_client.o ${SRCDIR}lib/fuse/fuse.o
+    ${SRCDIR}lib/fuse/mount.o ${SRCDIR}lib/fuse/helper.o
+    ${SRCDIR}lib/fuse/fuse_mt.o bulk_io.o afsfuse.cs.o afsfuse.xdr.o ${LIBS}
+afsfuse_server: afsfuse_server.o afsfuse.xdr.o afsfuse.ss.o bulk_io.o ${LIBS}
+    ${CC} ${CFLAGS} -o afsfuse_server afsfuse_server.o bulk_io.o afsfuse.ss.o
+    afsfuse.xdr.o ${LIBS}
+#afsfuse_client.o: afsfuse.h
+#afsfuse_server.o: afsfuse.h
+bulk_io.o: ${CC} -c -g -I${SRCDIR}include bulk_io.c afsfuse.cs.c afsfuse.ss.c
+    afsfuse.er.c afsfuse.h afsfuse.xdr.c: afsfuse.xg rxgen afsfuse.xg
+afsfuse.xdr.o: afsfuse.xdr.c ${CC} -c -g -I{SRCDIR}include afsfuse.xdr.c
+all: afsfuse_server afsfuse_client
+clean: rm *.o rm afsfuse_client rm afsfuse_server</pre></div><p>记住，您仍然需要使用 librx.a 和 liblwp.a 链接到 RX 和 RX 使用的 LWP 代码上。fuse/fuse.o、fuse/helper.o 和 fuse/mount.o 都是代码需要链接的 FUSE 库。</p><div class="ibm-alternate-rule"><hr></div><p class="ibm-ind-link ibm-back-to-top"><a href="#ibm-pcon" class="ibm-anchor-up-link">回页首</a></p><h2 id="N1028C">结束语</h2><p>在
+本文中，您已经学习了如何安装 FUSE 和 OpenAFS，以及如何使用它们来创建并定制自己的用户空间文件系统，它可以成为 Linux 
+中一个功能完备、稳定可靠的文件系统，这不需要对现有内核打任何补丁或重新编译 —— 您甚至都不需要成为内核模块程序员。您已经详细了解了启用 
+FUSE 文件系统的两个关键概念：如何安装和配置 FUSE 内核模块，以及如何充分利用 FUSE 库和 API 的功能。</p><!--CMA ID: true--><!--Site ID: 10--><!--XSLT stylesheet used to transform this file: dw-document-html-7.0.xsl-->
+<div class="ibm-alternate-rule"><hr></div><p class="ibm-ind-link ibm-back-to-top"><a href="#ibm-pcon" class="ibm-anchor-up-link">回页首</a></p><h2 id="download">下载</h2><table class="ibm-data-table
+                    dw-download-table" border="0" cellpadding="0" cellspacing="0"><thead><tr><th scope="col">描述</th><th scope="col">名字</th><th scope="col">大小</th></tr></thead><tbody><tr><th scope="row" class="ibm-table-row">AFSFuse filesystem sample code</th><td nowrap="nowrap"><a href="http://www.ibm.com/developerworks/apps/download/index.jsp?contentid=163148&amp;filename=l-fuse.zip&amp;method=http&amp;locale=zh_CN">l-fuse.zip</a></td><td nowrap="nowrap">9KB</td></tr></tbody></table>
+
+</div>
+</div>
+<!-- 1_1_COLUMN_END -->
+
+<!-- SPLIT_COLUMNS_BEGIN -->
+<div class="ibm-columns">
+
+<!-- 6_4_COLUMN_BEGIN -->
+<div class="ibm-col-6-4">
+
+<h2 id="resources" class="ibm-rule">参考资料 </h2><h3 class="dw-resources-category-heading">学习</h3><ul class="ibm-bullet-list"><li>您可以参阅本文在 developerWorks 全球站点上的 <a href="http://www.ibm.com/developerworks/linux/library/l-fuse/?S_TACT=105AGX52&amp;S_CMP=cn-a-l" target="_blank">英文原文</a>。</li><li>
+有关使用 FUSE 的例子，请参阅 <a href="http://richard.jones.name/google-hacks/gmail-filesystem/gmail-filesystem.html">Richard Jones' Gmail filesystem hack page</a>，它对 Google Gmail 进行了详细的介绍和剖析。
+</li><li>
+请阅读这篇有关 <a href="http://lwn.net/Articles/68104/">implementing FUSE</a> 的介绍性文章。
+</li><li>
+“<a href="http://www.ibm.com/developerworks/cn/linux/filesystem/l-fs/">高级文件系统实现者指南</a>”（developerWorks）是一系列可以帮助您成为文件系统专家的文章。
+</li><li>
+“<a href="http://www.ibm.com/developerworks/cn/linux/l-affinity.html">管理处理器的亲和性（affinity）</a>”（developerWorks，2005 年 9 月）介绍了如何编写更好的用户空间的应用程序。
+</li><li>
+“<a href="http://www.ibm.com/developerworks/cn/opensource/os-openafs/">OpenAFS 帮助聚集分布式数据</a>”（developerWorks，2005 年 5 月）提出了一种观点，认为 OpenAFS 是 NFS 的下一代继承者。这真是一个有创意的想法。
+</li><li>
+在 <a href="http://www.ibm.com/developerworks/cn/linux/">developerWorks Linux 专区</a> 中可以找到为 Linux 开发人员准备的更多资源。
+</li><li>
+跟踪 <a href="http://www.ibm.com/developerworks/offers/techbriefings/?S_TACT=105AGX52&amp;S_CMP=cn-a-l">developerWorks 技术事件和 Webcasts</a> 的最新进展。
+</li></ul><h3 class="dw-resources-category-heading">获得产品和技术</h3><ul class="ibm-bullet-list"><li>
+请下载 <a href="http://sourceforge.net/project/showfiles.php?group_id=121684&amp;package_id=132802">FUSE 源代码</a>。
+</li><li><a href="http://fuse.sourceforge.net/">FUSE 主页</a> 上有下载、FAQ 和 wiki、邮件列表、<a href="http://fuse.sourceforge.net/wiki/index.php/FileSystems">使用 FUSE 的文件系统清单</a> 以及操作系统和支持 FUSE 的操作系统的清单。
+</li><li>
+在您的下一个开发项目中采用 <a href="http://www.ibm.com/developerworks/downloads/?S_TACT=105AGX52&amp;S_CMP=cn-a-l">IBM 试用软件</a>，这可以从 developerWorks 上直接下载。<br></li></ul><h3 class="dw-resources-category-heading">讨论</h3><ul class="ibm-bullet-list"><li>
+通过参与 <a href="http://www.ibm.com/developerworks/blogs/?S_TACT=105AGX52&amp;S_CMP=cn-a-l">developerWorks blogs</a> 加入 developerWorks 社区。<br></li></ul>
+
+<!-- INLINE_COMMENTS_BEGIN -->
+<h2 id="icomments" class="ibm-alternate-rule ibm-no-print">条评论</h2>
+    
+<div class="ibm-no-print" id="dw-icomments-container">	
+	<div id="threadShow"><img style="display: none;" id="imgPlHdr" src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/animated-progress-38x38c.gif" alt=""><div id="cmtTog" style=""><div class="ibm-container ibm-alternate-two dw-commentbox dw-noborder"><div class="ibm-container-body dw-commentbox dw-noborder"><p id="signInSect">请 <a onclick="var e=arguments[0] || window.event; dwsi.siInst &amp;&amp; dwsi.siInst.showSignIn(); if (e.stopPropagation){ e.stopPropagation();} else { e.cancelBubble = true; } e.preventDefault &amp;&amp; e.preventDefault(); return false;" href="#">登录</a> 或 <a href="https://www.ibm.com/developerworks/dwwi/DWAuthRouter?m=register&amp;lang=zh_CN&amp;d=https%3A%2F%2Fwww.ibm.com%2Fdeveloperworks%2Fcn%2Flinux%2Fl-fuse%2F%23icomments">注册</a>  后发表评论。</p><p id="cmtHead"><label for="newCmt"><strong>添加评论:</strong></label></p><p>注意：评论中不支持 HTML 语法</p><div id="infoCmt"></div><form focus="name" enctype="multipart/form-data" method="post" action="" name="form" class="ibm-column-form ibm-styled-form"><p class="6-4-textarea"><textarea rows="5" name="newCmt" id="newCmt" class="dw-inoperable" disabled="disabled"></textarea><br></p><span class="ibm-input-group"><input value="1" name="comment_notification" id="comment_notification" disabled="disabled" type="checkbox"><label id="notifyText" class="ibm-form-note dw-btn-cancel-sec" for="comment_notification">有新评论时提醒我</label></span><span class="ibm-form-note dw-btn-cancel-sec notifySection" id="maxCharsCount">剩余 <span id="charCount">1000</span> 字符</span><p class="ibm-buttons-row"><input value="发布" name="postCmt" id="postCmt" class="ibm-btn-sec ibm-btn-small ibm-disabled" disabled="disabled" type="button"></p></form></div></div><div class="ibm-alternate-rule"><hr></div><div id="topControl" class="ibm-container ibm-alternate-two dw-comment-totals" style=""><div class="ibm-container-body"><form id="selectComments" method="get" action=""><p>&nbsp;<span class="dw-comment-totals-label"><strong>共有评论 (<span id="numCmts">1</span>)</strong></span><span class="dw-how-many-comments-label" style="display:none" id="dropdownCmts"><label for="howManyComments"><strong>显示：</strong></label>&nbsp;<select name="comments" id="howManyComments" class="dw-how-many-comments"><option selected="selected" value="recent">最新评论   </option></select><input class="ibm-btn-go" name="ibm-go" value="Go" src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/short-btn.gif" alt="Go" type="image"><br></span></p></form></div></div><div id="cmtSect"><div class="comment"><div class="dw-icomment-container"><div class="dw-icomment-body dw-noborder"><div class="dw-icomment-body dw-noborder"><p>"I think it's better to read the original english version of this post</p><p class="ibm-item-note-alternate dw-item-note-alternate-left">由 <strong><a href="https://www.ibm.com/developerworks/community/profiles/user/xiaoyaowangzi">xiaoyaowangzi</a></strong>  于 2013年08月07日发布 </p><p class="ibm-ind-link ibm-item-note-alternate dw-item-note-alternate-right"><a class="ibm-caution-link dw-report-abuse" href="https://www.ibm.com/developerworks/community/report?lang=zh&amp;referingURL=https://www.ibm.com/developerworks/cn/linux/l-fuse/&amp;mymessage=%E8%AF%84%E8%AE%BA%EF%BC%9A%20%22I%20think%20it%27s%20better%20to%20read%20the%20original%20english%20version%20of%20this%20post%0D%E7%94%B1%20xiaoyaowangzi%20%20%E4%BA%8E%202013%E5%B9%B408%E6%9C%8807%E6%97%A5%E5%8F%91%E5%B8%83%20%0D%0D--%E5%9C%A8%E4%B8%8B%E6%96%B9%E6%B7%BB%E5%8A%A0%E8%AF%84%E8%AE%BA--" target="_self">报告滥用</a></p><div class="dw-clear-both"></div></div></div></div></div></div></div><div id="bottomControl" class="ibm-container ibm-alternate-two dw-comment-totals" style="display:none"><div class="ibm-container-body"><form id="selectComments2" method="get" action=""><p>&nbsp;<span class="dw-comment-totals-label"><strong>共有评论 (<span id="numCmts2">1</span>)</strong></span><span class="dw-how-many-comments-label" style="display:none" id="dropdownCmts2"><label for="howManyComments2"><strong>显示：</strong></label>&nbsp;<select name="comments" id="howManyComments2" class="dw-how-many-comments"><option selected="selected" value="recent">最新评论   </option></select><input class="ibm-btn-go" name="ibm-go" value="Go" src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/short-btn.gif" alt="Go" type="image"><br></span></p></form></div></div></div>
+</div>
+<!-- Sign in OVERLAY STARTS HERE -->
+    
+<!-- Sign in OVERLAY STARTS HERE -->
+<div class="ibm-common-overlay" id="signin_overlay">
+<div class="ibm-head">
+<p><a class="ibm-common-overlay-close" href="#" onclick="dwsi.siInst.clearForm();">关闭 [x]</a></p>
+</div>
+<div class="ibm-body">
+<div class="ibm-main">
+
+ <div class="ibm-title">
+<h2>developerWorks: 登录</h2>
+<div id="ibm-overlay-error-signin" class="no-display"></div>
+</div>
+<div class="ibm-container ibm-alternate ibm-buttons-last">
+<div class="ibm-container-body">
+<p class="ibm-overlay-intro">标有星（<span class="ibm-required">*</span>）号的字段是必填字段。</p> 
+<form class="ibm-column-form" id="sFormId" action="" method="post" name="sForm" onsubmit="return false;">
+<p><label for="ibmid">IBM ID:<span class="ibm-required">*</span></label><span>
+    <input name="ibm-id" id="ibmid" size="25" class="required" onkeypress="dwsi.siInst.handleEP(event,this.form);" type="text">
+    <br><a onclick="window.location='/developerworks/dwwi/DWAuthRouter?m=reg&amp;lang=zh_CN&amp;d='+encodeURIComponent(location.protocol + '//' + location.hostname + location.pathname + '#icomments'); return false;" href="#" class="ibm-forward-link">需要一个 IBM ID？</a> <br>
+    <a class="ibm-forward-link" href="https://www.ibm.com/developerworks/dwwi/jsp/WSHelp.jsp?lang=zh_CN">忘记 IBM ID？</a> 
+</span>
+</p> 
+<p><label for="password">密码：<span class="ibm-required">*</span></label><span>
+    <input name="password" id="password" size="25" value="" class="required" onkeypress="dwsi.siInst.handleEP(event,this.form);" type="password">
+    <br><a class="ibm-forward-link" href="#" onclick="(function ()
+        {window.location='https://www.ibm.com/account/profile?page=forgot&amp;lang=zh_CN&amp;appname=ibm&amp;required=null&amp;d='+encodeURIComponent(dwsi.siInst.getAuthUrl())+'%3Fm%3Dloginpage%26lang%3Dzh_CN%26d%3D'+encodeURIComponent(location.href);})();">忘记密码？</a>
+    <br><a class="ibm-forward-link" href="#" onclick="(function () {window.location='https://www.ibm.com/account/profile?page=chpw&amp;lang=zh_CN&amp;appname=ibm&amp;required=null&amp;d='+encodeURIComponent(location.href);})();">更改您的密码</a></span></p> 
+<p class="dw-perm-box">
+	<span><input id="perm" name="perm_name" type="checkbox"><label for="perm"> 保持登录。</label></span>
+</p>
+<p>单击提交则表示您同意developerWorks 的条款和条件。 <a href="https://www.ibm.com/developerworks/community/terms?lang=zh">查看条款和条件</a>。</p>
+<div class="ibm-buttons-row">
+   <p><input class="ibm-btn-arrow-pri" name="ibm-submit" value="提交" onclick="dwsi.siInst.signin();return false;" type="submit"><span class="ibm-sep">&nbsp;</span>
+<input value="取消" name="ibm-cancel" class="ibm-btn-cancel-sec" onclick="dwsi.siInst.clearForm();ibmweb.overlay.hide('signin_overlay');return false;" type="button"></p>
+</div>
+</form>
+ <div class="ibm-overlay-rule"><hr></div> 
+
+<p>在您首次登录 developerWorks 时，会为您创建一份个人概要。<strong>您的个人概要中的信息（您的姓名、国家/地区，以及公司名称）是公开显示的，而且会随着您发布的任何内容一起显示，除非您选择隐藏您的公司名称。</strong>您可以随时更新您的 IBM 帐户。</p>
+<div><p class="dw-c-overlay-secure">所有提交的信息确保安全。</p></div>
+</div>
+</div>
+</div>
+</div>
+<div class="ibm-footer"></div>
+</div>
+<!-- Display name OVERLAY STARTS HERE -->
+<div class="ibm-common-overlay" id="displayname_overlay">
+<div class="ibm-head">
+<p><a class="ibm-common-overlay-close" href="#" onclick="dwsi.siInst.clearForm();">关闭 [x]</a></p>
+</div>
+<div class="ibm-body">
+<div class="ibm-main">
+<div class="ibm-title">
+<h2>选择您的昵称</h2><br><br>
+<div id="ibm-overlay-error-dname" class="no-display"></div>
+</div>
+<div class="ibm-container ibm-alternate ibm-buttons-last">
+<div class="ibm-container-body">
+<p class="ibm-overlay-intro">当您初次登录到 developerWorks 时，将会为您创建一份概要信息，您需要指定一个昵称。您的昵称将和您在 developerWorks 发布的内容显示在一起。</p><p><strong>昵称长度在 3 至 31 个字符之间</strong>。 
+    您的昵称在 developerWorks 社区中必须是唯一的，并且出于隐私保护的原因，不能是您的电子邮件地址。</p>
+<p class="ibm-overlay-intro">标有星（<span class="ibm-required">*</span>）号的字段是必填字段。</p> 
+<form id="dFormId" method="post" action="" name="dForm" onsubmit="return false;" class="ibm-column-form">
+<p><label for="displayname">昵称：<span class="ibm-required">*</span></label><span>
+    <input name="displayname" id="displayname" size="25" onkeypress="dwsi.siInst.handleEP(event,this.form);" type="text"></span>
+    <span class="ibm-form-note">(昵称长度在 3 至 31 个字符之间)</span>
+</p>
+<p>单击<strong>提交</strong>则表示您同意developerWorks 的条款和条件。 <a href="https://www.ibm.com/developerworks/community/terms?lang=zh">查看条款和条件</a>.</p>
+<div class="ibm-buttons-row">
+   <p><input class="ibm-btn-arrow-pri" name="ibm-submit" value="提交" onclick="dwsi.siInst.signin();return false;" type="submit"><span class="ibm-sep">&nbsp;</span>
+<input value="取消" name="ibm-cancel" class="ibm-btn-cancel-sec" onclick="dwsi.siInst.clearForm();ibmweb.overlay.hide('displayname_overlay');return false;" type="button"></p>
+</div>
+</form>
+<div class="ibm-overlay-rule"><hr></div>
+<div><p class="dw-c-overlay-secure">所有提交的信息确保安全。</p></div>
+</div>
+</div>
+</div>
+</div>
+<div class="ibm-footer"></div>
+</div>
+
+
+<!-- INLINE_COMMENTS_END -->
+
+</div>
+<!-- 6_4_COLUMN_END -->
+
+<!-- 6_2_COLUMN_BEGIN -->
+<div class="ibm-col-6-2">
+
+<!-- Next_Steps -->
+<!-- Dig_Deeper -->
+
+
+<!-- Promotion_Module -->
+    
+<!-- PROMOTION_MODULE_START -->
+<div class="ibm-alternate-rule"><hr></div>
+<ul class="ibm-portrait-module-list">
+<li><a role="presentation" tabindex="-1" class="" href="http://www.ibm.com/developerworks/cn/puresystems/"><img src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/sm-f-cl-puresystems70.jpg" alt="" height="60" width="60"></a>
+<h3><a class="ibm-feature-link" href="http://www.ibm.com/developerworks/cn/puresystems/">IBM PureSystems</a></h3>
+<p>IBM PureSystems™ 系列解决方案是一个专家集成系统</p></li>
+<li><a role="presentation" tabindex="-1" class="" href="http://www.ibm.com/developerworks/cn/views/global/libraryview.jsp?type_by=Knowledge+paths"><img src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/sm-f-knowledgepath50.jpg" alt="" height="60" width="60"></a>
+<h3><a class="ibm-feature-link" href="http://www.ibm.com/developerworks/cn/views/global/libraryview.jsp?type_by=Knowledge+paths">developerWorks 学习路线图</a></h3>
+<p>通过学习路线图系统掌握软件开发技能</p></li>
+<li><a role="presentation" tabindex="-1" class="" href="http://www.ibm.com/developerworks/cn/downloads/"><img src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/sm-f-evaluationsoftware60.png" alt="" height="60" width="60"></a>
+<h3><a class="ibm-feature-link" href="http://www.ibm.com/developerworks/cn/downloads/">软件下载资源中心</a></h3>
+<p>软件下载、试用版及云计算</p></li>
+</ul>
+<!-- PROMOTION_MODULE_END -->
+
+</div>
+<!-- 6_2_COLUMN_END -->
+
+</div>
+<!-- SPLIT_COLUMNS_END -->
+
+<!-- BOTTOM_BACK_TO_TOP -->
+<div class="ibm-columns">
+<div class="ibm-col-1-1">
+	<div class="ibm-alternate-rule"><hr></div><p class="ibm-ind-link ibm-back-to-top"><a href="#ibm-pcon" class="ibm-anchor-up-link">回页首</a></p>
+</div>
+</div>
+
+<!-- Rating_Meta_BEGIN -->
+<!--Rating_Meta_BEGIN--><div class="metavalue">static.content.url=http://www.ibm.com/developerworks/js/artrating/</div><div class="metavalue">SITE_ID=10</div><div class="metavalue">Zone=Linux</div><div class="metavalue">ArticleID=163148</div><div class="metavalue">ArticleTitle=使用 FUSE 开发自己的文件系统</div><div class="metavalue">publish-date=04102006</div><script language="javascript" type="text/javascript">document.write('<div class="metavalue">url='+location.href.replace(/</g,  '%3C')+'</div>');</script><div class="metavalue">url=https://www.ibm.com/developerworks/cn/linux/l-fuse/</div><!--Rating_Meta_END-->
+<!-- Rating_Meta_END -->
+
+</div>
+<!-- END_IBM_CONTENT_MAIN -->
+
+</div>
+<!-- END_IBM_CONTENT_BODY -->
+
+</div>
+<!-- END_IBM_CONTENT -->
+
+</div></div>
+<!-- LEADSPACE_END -->
+
+
+<!-- END_IBM_PCON -->
+<!-- FOOTER_BEGIN -->
+<!-- FOOTER_BEGIN -->
+<div aria-label="页脚" id="ibm-footer"><!-- IBM footer container; disabled --></div>
+
+<div id="ibm-footer-module-dwwrapper" role="contentinfo" aria-label="developerWorks Footer">
+
+<div id="ibm-footer-module-dw">
+	<div class="dw-footer-columns">
+		<div class="dw-footer-col-5-1">
+			<ul>
+                <li><a href="https://www.ibm.com/developerworks/secure/feedback.jsp?domain=dwchina">帮助</a></li>
+				<li><a href="http://www.ibm.com/developerworks/cn/author/">联系编辑</a></li>
+				<li><a href="https://www.ibm.com/developerworks/secure/myideas2.jsp?domain=dwchina&amp;start=true">提交内容</a></li>
+				<li><a href="http://www.ibm.com/developerworks/cn/sitemap/">网站导航</a></li>
+				<li><a href="http://www.ibm.com/developerworks/cn/rss/">订阅源</a></li>
+			</ul>
+        </div>
+		<div class="dw-footer-col-5-2">
+			<ul>
+			<li><a href="http://www.ibm.com/vrm/newsletter/10104?S_TACT=105AGX52&amp;S_CMP=dwcntop">在线浏览每周时事通讯</a></li>
+				<li><a class="dwcn-sina-link" href="http://weibo.com/ibmdw/" target="_blank">新浪微博</a></li>
+				<li><a href="https://www.ibm.com/developerworks/community/report?lang=zh">报告滥用</a></li>
+				<li><a href="https://www.ibm.com/developerworks/community/terms?lang=zh">使用条款</a></li>
+				<li><a href="https://www.ibm.com/developerworks/cn/community/terms/thirdparty/">第三方提示</a></li>
+			</ul>
+		</div>
+		<div class="dw-footer-col-5-3">
+			<ul>
+				<li><a href="http://www.ibm.com/privacy/cn/zh/">隐私条约</a></li>
+				<li><a href="http://www.ibm.com/ibm/accessibility/cn/">浏览辅助</a></li>
+				<li><a href="http://www.ibm.com/developerworks/cn/academic/">IBM 教育学院教育培养计划</a></li><li><a href="http://www.ibm.com/developerworks/cn/gep/">IBM 创业企业全球扶持计划</a></li><li><a href="http://www.ibm.com/partnerworld/isv/">ISV 资源 (英语)</a></li>
+			</ul>
+		</div>
+		<div class="dw-footer-col-5-4">
+		
+ 
+			<ul>
+				<li><a href="https://www.ibm.com/developerworks/cn/newsletter/">dW 中国每周时事通讯</a><br> 
+				
+				</li>
+			</ul>
+			
+		</div>
+		<div class="dw-footer-col-5-5">
+			<img alt="IBM®" src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/dwn-ibm-logo-v17.png" height="46" width="223">
+			<img class="dw-preload" src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/ibm_sprite_social_blue_ON.png" alt="" height="1" width="1">
+		</div>
+	</div>
+	<!-- Language selector no-script -->
+	<noscript>
+	<div id="dw-footer-selectlang">
+		<h2><a name="SELECTLANG">选择语言：</a></h2>
+		<ul>
+			<li><a href="http://www.ibm.com/developerworks/" lang="en">English</a></li>
+			<li><a href="http://www.ibm.com/developerworks/cn/">中文</a></li>
+			<li><a href="http://www.ibm.com/developerworks/jp/" lang="ja">日本語</a></li>
+			<li><a href="http://www.ibm.com/developerworks/ru/" lang="ru">Русский</a></li>
+			<li><a href="http://www.ibm.com/developerworks/br/" lang="pt">Português (Brasil)</a></li>
+			<li><a href="http://www.ibm.com/developerworks/ssa/" lang="es">Español</a></li>
+			<li><a href="http://www.ibm.com/developerworks/vn/" lang="vi">Việt</a></li>
+		</ul>
+	</div>
+	</noscript>
+</div>
+
+</div><!-- FOOTER_END --><!-- FOOTER_END -->
+
+<!-- END_IBM-TOP -->
+</div>
+
+<!-- SCRIPTS_INCLUDE_BEGIN -->
+<script type="text/javascript" src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/dw-comments.js">//</script>
+<script type="text/javascript" language="JavaScript">
+		dojo.ready(function(){
+		rBHash = null;
+		rBHash = new Object();
+		rBHash['viperLang'] = 'zh';
+		rBHash['urlLang'] = 'cn';
+		
+		dwsi.siInst = new dwweb.dynnav.dwsi();
+		dwsi.siInst.initSI();		
+
+		// construct the comment widget
+dwc.cmts = '条评论';
+dwc.signInPreText = '请';
+dwc.signIn = '登录';
+dwc.or = '或';
+dwc.register = '注册';
+dwc.signInPostText = '';
+dwc.leaveCmt = '后发表评论。';
+dwc.view = '查看';
+dwc.totalCmts = '共有评论';
+dwc.postYourCmt = '添加您的评论';
+dwc.show = '显示：';
+dwc.recentCmts = '最新评论';
+dwc.allCmts = '所有评论';
+dwc.tooLongCmt = '您的评论超过了 1000 字符限制';
+dwc.numCharsLeft = '剩余 <span id="charCount">{1}</span> 字符';
+dwc.reportAbuse = '报告滥用';
+dwc.notifyMsg = '有新评论时提醒我';
+dwc.htmlWarning = '注意：评论中不支持 HTML 语法'; 
+dwc.cmt = '评论：';
+dwc.addCmts = '添加评论';
+dwc.addCmt = '添加评论';
+dwc.doNotErase = '--在下方添加评论--'; 
+dwc.viewOrAddCmts = '查看或添加评论';
+dwc.reportInapprCont = '举报不良信息';
+dwc.reportInapprContLink = 'http://www.ibm.com/developerworks/forums/forum.jspa?forumID=1834';
+dwc.postingCmt = '正在发布评论……';
+dwc.noCmt = '快来添加第一条评论';
+dwc.netwkErr = '在检索评论时出错，请稍后刷新。';
+dwc.addACmt = '添加评论';
+dwc.instructCmt = '标有星号（<span class="ibm-required">*</span>）的是必填项目。';
+dwc.btnPost = '发布';
+dwc.btnPostAnon = '匿名发布';
+dwc.btnClrCmt = '清除评论';
+dwc.btnCancel = '取消';
+dwc.showRecent = '显示最新的 {1} 条评论'; // {1} is the count to be substituted
+dwc.showNext = '显示后 {1} 条评论'; // {1} is the count to be substituted
+dwc.showAllCmts = '显示所有评论';
+dwc.enterCmt = '请输入评论内容。';
+dwc.loginErr = '暂时无法验证您的登录状态，请稍后再试。';
+dwc.postErr = '暂时无法发布您的评论，请稍后再试。';
+dwc.postBy = '由 <strong>{1}</strong>  于 {2} '; // {1} is the author to be substituted; {2} is the date
+dwc.siteId = 10;
+dwc.lang = 'zh_CN';
+dwc.viperLang = 'zh';
+//dwc.abuseHref =  null;
+dwc.maxChars = 1000;
+dwc.cmtTxt =  '评论：';
+dwc.cmtsTxt =  '评论：';  
+		dwc && new dwc.comments('threadShow','95%',5,'nCmts','icomments');
+		});
+</script>
+<!-- BEGIN: Use this section to set page specific variables for the Unica Page Tag -->
+<script language="JavaScript">var NTPT_PGEXTRA="ibmSkillLevel=1&ibmAdoptPhase=667&ibmRole=710&ibmCmaId=163148&ibmContentAreas=linux";</script>
+<!--END --><!-- SCRIPTS_INCLUDE_END -->
+
+<div id="ibm-metrics">
+<script src="%E4%BD%BF%E7%94%A8%20FUSE%20%E5%BC%80%E5%8F%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F_files/stats.js" type="text/javascript">//</script>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body></html>

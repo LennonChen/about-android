@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <title>CSDN Ad</title>
+    <style type="text/css">
+        body { margin:0px; padding:0px;}
+    </style>
+     <script src="Android%E4%B9%8BUID%20and%20PID%20-%20%E7%94%B0%E6%B5%B7%E7%AB%8B@CSDN%20-%20%E5%8D%9A%E5%AE%A2%E9%A2%91%E9%81%93%20-%20CSDN.NET_files/jquery.js" type="text/javascript"></script>
+</head>
+<body>
+    <div id="div1"><style type="text/css">
+ul { margin:0px; padding:0 4px 0 0; }
+ul, x:-moz-any-link, x:default { width:90%; }
+ul li { padding:3px 0px;}
+a { font-size:12px; text-decoration:none; color:#006699; }
+a:hover { color:#000; }
+</style>
+
+<ul>
+
+<li><a href="http://blog.csdn.net/wangjinyu501/article/details/22052187" target="_blank">* Android 中的接口回调</a></li>
+
+
+<li><a href="http://blog.csdn.net/totogo2010/article/details/22093363" target="_blank">* iOS开发小技巧总结1</a></li>
+
+
+
+<li><a href="http://blog.csdn.net/chenssy/article/details/21988605" target="_blank">* java提高篇（二四）-----HashSet</a></li>
+
+
+<li><a href="http://blog.csdn.net/rill_zhen/article/details/21988123" target="_blank">* FFT-1-FFT计划概述</a></li>
+
+
+<li><a href="http://blog.csdn.net/defonds/article/details/22102561" target="_blank">* 使用 spring 集成 dbcp 数据库连接池到 Wowza 插件</a></li>
+
+
+<li><a href="http://blog.csdn.net/poem_qianmo/article/details/21974023" target="_blank">* 【OpenCV入门教程之七】 玩转OpenCV源代码：生成OpenCV工程解决方案与OpenCV源码编译</a></li>
+
+</ul></div>
+<script type="text/javascript">
+    window.onload = function () {
+        if (document.domain != 'blog.csdn.net') {
+            document.domain = "csdn.net";
+        }
+        //这种给广告区域赋值的方式，对于有些JS广告不能完美的显示
+        //top.document.getElementById('ad_commend').innerHTML = document.getElementById('div1').innerHTML;
+
+        var h = document.body.offsetHeight + 2;
+        setTimeout(function () {
+            if (h > 800) h = document.getElementById('div1').offsetHeight + 4;
+            try { top.document.getElementById('ad_frm_1').style.height = h + 'px'; }
+            catch (err) { }
+        }, 100);
+    };
+    $(function() {
+        $("#div1 a").click(function() {
+            top._gaq.push(['_trackEvent', 'function', 'onclick', 'blog_articles_tuijianwenzhang']);
+        });
+    });
+</script>
+
+
+</body></html>
