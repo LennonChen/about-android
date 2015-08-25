@@ -248,7 +248,7 @@ typedef struct hw_device_t {
 1.simulator driver
 ----------------------------------------
 
-https://github.com/leeminghao/about-android/hardware/hal/simulator_driver.md
+https://github.com/leeminghao/about-android/tree/master/hardware/hal/simulator_driver.md
 
 至此，我们用内存模拟的虚拟硬件设备已经能够正常工作了，传统的Linux系统把对硬件的支持完全实现在
 内核空间中，即把对硬件的支持完全实现在硬件驱动模块中，但是Android系统不但在内核中实现了硬件
@@ -279,4 +279,4 @@ Android系统为硬件抽象层中的模块接口定义了编写规范，我们�
 2.simulator hal
 ----------------------------------------
 
-https://github.com/leeminghao/about-android/hardware/hal/simulator_driver.md
+https://github.com/leeminghao/about-android/tree/master/hardware/hal/simulator_hal.md
