@@ -459,7 +459,7 @@ real_blkdev=/dev/block/bootdevice/by-name/userdata
 #endif
 
         /* Make an encrypted master key */
-        // 3.光有password作为key还不够，我们还需要加入盐值，最终会搞到keymaster里边得到一组密钥。
+        // 3.光有password作为key还不够，我们还需要加入盐值，最终会在master_key里边得到一组密钥。
         if (create_encrypted_random_key(passwd, crypt_ftr.master_key, crypt_ftr.salt, &crypt_ftr)) {
             SLOGE("Cannot create encrypted master key\n");
             goto error_shutting_down;
@@ -488,7 +488,11 @@ real_blkdev=/dev/block/bootdevice/by-name/userdata
 
 ##### cryptfs_init_crypt_mnt_ftr
 
-#####
+https://github.com/leeminghao/about-android/blob/master/hardware/cryptfs/cryptfs_init_crypt_mnt_ftr.md
+
+##### create_encrypted_random_key
+
+https://github.com/leeminghao/about-android/blob/master/hardware/cryptfs/create_encrypted_random_key.md
 
 #### 为启动最小framework做准备
 
@@ -563,6 +567,8 @@ real_blkdev读取加密数据，然后解密传递给读者。当往这个设备
         }
     }
 ```
+
+##### create_crypto_blk_dev
 
 #### 加密
 
