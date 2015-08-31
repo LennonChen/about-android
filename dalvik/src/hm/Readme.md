@@ -43,4 +43,4 @@ https://github.com/leeminghao/about-android/blob/master/dalvik/app_process/app_p
 AndroidRuntime.start
 ----------------------------------------
 
-https://github.com/leeminghao/about-android/blob/master/dalvik/start/README.md
+https://github.com/leeminghao/about-android/blob/master/dalvik/start/start.md
