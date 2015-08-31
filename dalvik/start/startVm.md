@@ -1,3 +1,6 @@
+AndroidRuntime.startVM
+========================================
+
 path: frameworks/base/core/jni/AndroidRuntime.cpp
 ```
 /*
@@ -53,6 +56,20 @@ int AndroidRuntime::startVm(JavaVM** pJavaVM, JNIEnv** pEnv)
       kEMJitCompiler,
     } executionMode = kEMDefault;
 
+    ...
+
+    result = 0;
+
+bail:
+    free(stackTraceFile);
+    return result;
+}
+```
+
+1.设置Dalvik虚拟机的启动选项.
+----------------------------------------
+
+```
     /* 1. -Xcheck:jni: 用来启动JNI方法检查。我们在C/C++代码中，可以修改Java对象的成员变量或者调用Java对象的成员函数。
      * 加了-Xcheck:jni选项之后，就可以对要访问的Java对象的成员变量或者成员函数进行合法性检查，例如，检查类型是否匹配。
      * 我们可以通过dalvik.vm.checkjni或者ro.kernel.android.checkjni这两个系统属性来指定是否要启用-Xcheck:jni选项。
@@ -374,7 +391,15 @@ int AndroidRuntime::startVm(JavaVM** pJavaVM, JNIEnv** pEnv)
     initArgs.options = mOptions.editArray();
     initArgs.nOptions = mOptions.size();
     initArgs.ignoreUnrecognized = JNI_FALSE;
+```
 
+2.JNI_CreateJavaVM
+----------------------------------------
+
+设置好Dalvik虚拟机的启动选项之后，AndroidRuntime的成员函数startVm就会调用另外一个函数
+JNI_CreateJavaVM来创建以及初始化一个Dalvik虚拟机实例。
+
+```
     /*
      * Initialize the VM.
      *
@@ -389,11 +414,6 @@ int AndroidRuntime::startVm(JavaVM** pJavaVM, JNIEnv** pEnv)
         ALOGE("JNI_CreateJavaVM failed\n");
         goto bail;
     }
-
-    result = 0;
-
-bail:
-    free(stackTraceFile);
-    return result;
-}
 ```
+
+https://github.com/leeminghao/about-android/blob/master/dalvik/start/JNI_CreateJavaVM.md

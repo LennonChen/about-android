@@ -181,3 +181,6 @@ public:
     const char* const* mArgV;
 };
 ```
+
+通过分析app_process进程源码我们知道，因为没有指定--zygote参数，所以是调用runtime的start
+方法来加载RuntimeInit类来进行后续工作的.

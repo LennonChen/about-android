@@ -1,3 +1,6 @@
+AndroidRuntime.start
+========================================
+
 path: frameworks/base/core/jni/AndroidRuntime.cpp
 ```
 /*
@@ -13,6 +16,16 @@ void AndroidRuntime::start(const char* className, const char* options)
     ALOGD("\n>>>>>> AndroidRuntime START %s <<<<<<\n",
             className != NULL ? className : "(unknown)");
 
+    ...
+}
+```
+
+start方法中做了如下工作:
+
+1.AndroidRuntime.startVm
+----------------------------------------
+
+```
     /*
      * 'startSystemServer == true' means runtime is obsolete and not run from
      * init.rc anymore, so we print out the boot start event here.
@@ -44,21 +57,53 @@ void AndroidRuntime::start(const char* className, const char* options)
     JNIEnv* env;
     /* JNI JavaVM pointer */
     /* static JavaVM* mJavaVM; */
-    /* 1.调用成员函数startVm来创建一个Dalvik虚拟机实例，并且保存在成员变量mJavaVM中。*/
     if (startVm(&mJavaVM, &env) != 0) {
         return;
     }
-    onVmCreated(env);
+```
 
+调用成员函数startVm来创建一个Dalvik虚拟机实例，并且保存在成员变量mJavaVM中.
+
+https://github.com/leeminghao/about-android/blob/master/dalvik/start/startVm.md
+
+2.onVmCreated
+----------------------------------------
+
+在调用startVm创建完成Dalvik虚拟机之后,接下来返回到start函数中继续执行,接下来执行onVmCreated
+方法来进行一些早期的初始化操作.
+
+```
+    onVmCreated(env);
+```
+
+https://github.com/leeminghao/about-android/blob/master/dalvik/start/onVmCreated.md
+
+3.startReg
+----------------------------------------
+
+调用成员函数startReg来注册一些Android核心类的JNI方法.
+
+```
     /*
      * Register android functions.
      */
-    /* 2.调用成员函数startReg来注册一些Android核心类的JNI方法。*/
     if (startReg(env) < 0) {
         ALOGE("Unable to register all android natives\n");
         return;
     }
+```
 
+4.main
+----------------------------------------
+
+调用参数className所描述的一个Java类的静态成员函数main，来作为Zygote进程的Java层入口。
+这个入口类就为com.android.internal.os.ZygoteInit(或者RuntimeInit)。执行这一步的时候，
+Zygote进程(app_process进程)中的Dalvik虚拟机实例就开始正式运作了。注意，在这一步中，
+如果是在com.android.internal.os.ZygoteInit类的静态成员函数main，会进行大量的Android
+核心类和系统资源文件预加载。其中，预加载的Android核心类可以参考frameworks/base/preloaded-classes
+这个文件，而预加载的系统资源就是包含在/system/framework/framework-res.apk中。
+
+```
     /*
      * We want to call main() with a String array with arguments in it.
      * At present we have two arguments, the class name and an option string.
@@ -69,13 +114,6 @@ void AndroidRuntime::start(const char* className, const char* options)
     jstring classNameStr;
     jstring optionsStr;
 
-    /* 3.调用参数className所描述的一个Java类的静态成员函数main，来作为Zygote进程的Java层入口。
-     * 这个入口类就为com.android.internal.os.ZygoteInit。执行这一步的时候，Zygote进程中的Dalvik
-     * 虚拟机实例就开始正式运作了。注意，在这一步中，也就是在com.android.internal.os.ZygoteInit
-     * 类的静态成员函数main，会进行大量的Android核心类和系统资源文件预加载。其中，预加载的Android
-     * 核心类可以参考frameworks/base/preloaded-classes这个文件，而预加载的系统资源就是包含在
-     * /system/framework/framework-res.apk中。
-     */
     stringClass = env->FindClass("java/lang/String");
     assert(stringClass != NULL);
     strArray = env->NewObjectArray(2, stringClass, NULL);
@@ -111,16 +149,21 @@ void AndroidRuntime::start(const char* className, const char* options)
         }
     }
     free(slashClassName);
+```
 
+5.Shutting down VM
+----------------------------------------
+
+从com.android.internal.os.ZygoteInit(RuntimeInit)类的静态成员函数main返回来的时候，
+就说明Zygote(app_process)进程准备要退出来了。在退出之前，会调用前面创建的Dalvik虚拟机
+实例的成员函数DetachCurrentThread和DestroyJavaVM。其中，前者用来将Zygote(app_process)
+进程的主线程脱离前面创建的Dalvik虚拟机实例，后者是用来销毁前面创建的Dalvik虚拟机实例。
+
+```
     ALOGD("Shutting down VM\n");
-    /* 4.从com.android.internal.os.ZygoteInit类的静态成员函数main返回来的时候，
-     * 就说明Zygote进程准备要退出来了。在退出之前，会调用前面创建的Dalvik虚拟机
-     * 实例的成员函数DetachCurrentThread和DestroyJavaVM。其中，前者用来将Zygote
-     * 进程的主线程脱离前面创建的Dalvik虚拟机实例，后者是用来销毁前面创建的Dalvik虚拟机实例。
-     */
+
     if (mJavaVM->DetachCurrentThread() != JNI_OK)
         ALOGW("Warning: unable to detach main thread\n");
     if (mJavaVM->DestroyJavaVM() != 0)
         ALOGW("Warning: VM did not shut down cleanly\n");
-}
 ```

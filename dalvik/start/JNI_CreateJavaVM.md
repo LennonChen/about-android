@@ -1,3 +1,6 @@
+JNI_CreateJavaVM
+========================================
+
 path: dalvik/vm/Jni.cpp
 ```
 /*
@@ -19,6 +22,21 @@ jint JNI_CreateJavaVM(JavaVM** p_vm, JNIEnv** p_env, void* vm_args) {
     /* struct DvmGlobals gDvm; --dalvik/vm/Globals.h */
     memset(&gDvm, 0, sizeof(gDvm));
 
+    ...
+
+    ALOGV("CreateJavaVM succeeded");
+    return JNI_OK;
+}
+```
+
+JNI_CreateJavaVM主要完成如下工作:
+
+1.为当前进程创建一个Dalvik虚拟机实例
+----------------------------------------
+
+为当前进程创建一个Dalvik虚拟机实例，即一个JavaVMExt对象.
+
+```
     /*
      * Set up structures for JNIEnv and VM.
      */
@@ -31,7 +49,33 @@ jint JNI_CreateJavaVM(JavaVM** p_vm, JNIEnv** p_env, void* vm_args) {
 
     UniquePtr<const char*[]> argv(new const char*[args->nOptions]);
     memset(argv.get(), 0, sizeof(char*) * (args->nOptions));
+```
 
+### JavaVMExt
+
+path: dalvik/vm/JniInternal.h
+```
+struct JavaVMExt {
+    const struct JNIInvokeInterface* funcTable;     /* must be first */
+
+    const struct JNIInvokeInterface* baseFuncTable;
+
+    /* head of list of JNIEnvs associated with this VM */
+    JNIEnvExt*      envList;
+    pthread_mutex_t envListLock;
+};
+```
+
+#### JNIInvokeInterface
+
+JNIInvokeInterface的定义如下所示:
+
+https://github.com/leeminghao/about-android/blob/master/dalvik/start/JNIInvokeInterface.md
+
+2.处理Dalvik虚拟机的启动选项.
+----------------------------------------
+
+```
     /*
      * Convert JNI args to argv.
      *
@@ -99,7 +143,14 @@ jint JNI_CreateJavaVM(JavaVM** p_vm, JNIEnv** p_env, void* vm_args) {
         return JNI_ERR;
     }
     gDvmJni.jniVm = (JavaVM*) pVM;
+```
 
+3.为当前线程创建和初始化一个JNI环境
+----------------------------------------
+
+即一个JNIEnvExt对象,这是通过调用函数dvmCreateJNIEnv来完成的
+
+```
     /*
      * Create a JNIEnv for the main thread.  We need to have something set up
      * here because some of the class initialization we do when starting
@@ -109,7 +160,40 @@ jint JNI_CreateJavaVM(JavaVM** p_vm, JNIEnv** p_env, void* vm_args) {
      * dvmCreateJNIEnv来完成的。
      */
     JNIEnvExt* pEnv = (JNIEnvExt*) dvmCreateJNIEnv(NULL);
+```
 
+### JNIEnvExt
+
+path: dalvik/vm/JniInternal.h
+```
+struct JNIEnvExt {
+    const struct JNINativeInterface* funcTable;     /* must be first */
+
+    const struct JNINativeInterface* baseFuncTable;
+
+    u4      envThreadId;
+    Thread* self;
+
+    /* if nonzero, we are in a "critical" JNI call */
+    int     critical;
+
+    struct JNIEnvExt* prev;
+    struct JNIEnvExt* next;
+};
+```
+
+#### JNINativeInterface
+
+JNINativeInterface的定义如下所示:
+
+https://github.com/leeminghao/about-android/blob/master/dalvik/start/JNINativeInterface.md
+
+4.dvmStartup
+----------------------------------------
+
+调用函数dvmStartup来初始化前面所创建的Dalvik虚拟机实例.
+
+```
     /* Initialize VM. */
     /* 4.并且调用函数dvmStartup来初始化前面所创建的Dalvik虚拟机实例。*/
     gDvm.initializing = true;
@@ -123,7 +207,16 @@ jint JNI_CreateJavaVM(JavaVM** p_vm, JNIEnv** p_env, void* vm_args) {
         ALOGW("CreateJavaVM failed: %s", status.c_str());
         return JNI_ERR;
     }
+```
 
+https://github.com/leeminghao/about-android/blob/master/dalvik/start/dvmStartup.md
+
+5.dvmChangeStatus
+----------------------------------------
+
+调用函数dvmChangeStatus将当前线程的状态设置为正在执行NATIVE代码.
+
+```
     /*
      * Success!  Return stuff to caller.
      */
@@ -131,9 +224,14 @@ jint JNI_CreateJavaVM(JavaVM** p_vm, JNIEnv** p_env, void* vm_args) {
      * 并且将面所创建和初始化好的JavaVMExt对象和JNIEnvExt对象通过输出参数p_vm和p_env返回给调用者。
      */
     dvmChangeStatus(NULL, THREAD_NATIVE);
+```
+
+6.返回参数
+----------------------------------------
+
+将面所创建和初始化好的JavaVMExt对象和JNIEnvExt对象通过输出参数p_vm和p_env返回给调用者.
+
+```
     *p_env = (JNIEnv*) pEnv;
     *p_vm = (JavaVM*) pVM;
-    ALOGV("CreateJavaVM succeeded");
-    return JNI_OK;
-}
 ```
