@@ -61,103 +61,19 @@ public:
 ```
 
 在onVmCreated函数中首先将"com.android.commands.hm.Hm"类名称装换为"com/android/commands/hm/Hm"
-接下来调用env指向的FindClass方法来生成对应Hm类jclass类型. 在调用startVM来创建Dalvik虚拟的实例
-的时候在JNI_CreateJavaVM方法中调用了dvmCreateJNIEnv函数来创建和初始化一个JNI环境，即一个
-JNIEnvExt对象, 在dvmCreateJNIEnv方法中，对应的funcTable被设置为了gNativeInterface全局变量,
-如下所示:
+接下来调用env指向的FindClass方法来生成对应Hm类jclass类型.
+在调用startVM来创建Dalvik虚拟的实例的时候在JNI_CreateJavaVM方法中调用了dvmCreateJNIEnv函数
+
+https://github.com/leeminghao/about-android/blob/master/dalvik/start/dvmCreateJNIEnv.md
+
+来创建和初始化一个JNI环境，即一个JNIEnvExt对象, 在dvmCreateJNIEnv方法中，对应的funcTable
+被设置为了gNativeInterface全局变量,如下所示:
 
 https://github.com/leeminghao/about-android/blob/master/dalvik/start/gNativeInterface.md
 
-其中FindClass函数的实现如下所示:
-
-FindClass
+1.FindClass
 ----------------------------------------
 
-path: dalvik/vm/Jni.cpp
-```
-/*
- * Find a class by name.
- *
- * We have to use the "no init" version of FindClass here, because we might
- * be getting the class prior to registering native methods that will be
- * used in <clinit>.
- *
- * We need to get the class loader associated with the current native
- * method.  If there is no native method, e.g. we're calling this from native
- * code right after creating the VM, the spec says we need to use the class
- * loader returned by "ClassLoader.getBaseClassLoader".  There is no such
- * method, but it's likely they meant ClassLoader.getSystemClassLoader.
- * We can't get that until after the VM has initialized though.
- */
-static jclass FindClass(JNIEnv* env, const char* name) {
-    ScopedJniThreadState ts(env);
+其中FindClass函数的实现如下所示:
 
-    const Method* thisMethod = dvmGetCurrentJNIMethod();
-    assert(thisMethod != NULL);
-
-    Object* loader;
-    Object* trackedLoader = NULL;
-    if (ts.self()->classLoaderOverride != NULL) {
-        /* hack for JNI_OnLoad */
-        assert(strcmp(thisMethod->name, "nativeLoad") == 0);
-        loader = ts.self()->classLoaderOverride;
-    } else if (thisMethod == gDvm.methDalvikSystemNativeStart_main ||
-               thisMethod == gDvm.methDalvikSystemNativeStart_run) {
-        /* start point of invocation interface */
-        if (!gDvm.initializing) {
-            loader = trackedLoader = dvmGetSystemClassLoader();
-        } else {
-            loader = NULL;
-        }
-    } else {
-        loader = thisMethod->clazz->classLoader;
-    }
-
-    char* descriptor = dvmNameToDescriptor(name);
-    if (descriptor == NULL) {
-        return NULL;
-    }
-    ClassObject* clazz = dvmFindClassNoInit(descriptor, loader);
-    free(descriptor);
-
-    jclass jclazz = (jclass) addLocalReference(ts.self(), (Object*) clazz);
-    dvmReleaseTrackedAlloc(trackedLoader, ts.self());
-    return jclazz;
-}
-```
-
-### dvmGetCurrentJNIMethod
-
-dvmGetCurrentJNIMethod获取当前线程的JNI方法
-
-path: dalvik/vm/Jni.cpp
-```
-/*
- * Get the method currently being executed by examining the interp stack.
- */
-const Method* dvmGetCurrentJNIMethod() {
-    assert(dvmThreadSelf() != NULL);
-
-    void* fp = dvmThreadSelf()->interpSave.curFrame;
-    const Method* meth = SAVEAREA_FROM_FP(fp)->method;
-
-    assert(meth != NULL);
-    assert(dvmIsNativeMethod(meth));
-    return meth;
-}
-```
-
-#### dvmThreadSelf
-
-dvmThreadSelf通过调用pthread_getspecific函数来获取当前主线程的Thread结构.
-
-path: dalvik/vm/Thread.cpp
-```
-/*
- * Like pthread_self(), but on a Thread*.
- */
-Thread* dvmThreadSelf()
-{
-    return (Thread*) pthread_getspecific(gDvm.pthreadKeySelf);
-}
-```
+https://github.com/leeminghao/about-android/blob/master/dalvik/start/FindClass.md
