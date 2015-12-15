@@ -1,26 +1,6 @@
 create_encrypted_random_key
 ========================================
 
-密密钥的实现逻辑:
-
-1.产生随机16 Bytes DEK(disk encryption key--磁盘加密用的密钥)及16 Bytes SALT；
-
-2.对(用户密码+SALT)使用scrypt算法产生32 Bytes HASH 作为IK1(intermediate key 1);
-
-3.将IK1填充到硬件产生的私钥规格大小(目前看到是RSA算法，256Bytes), 具体是:
-
-```
-00 || IK1 || 00..00 ## one zero byte, 32 IK1 bytes, 223 zero bytes.
-```
-
-4.使用硬件私钥 HBK 对 IK1 进行签名，生成256 Bytes签名数据作为IK2；
-
-5.对(IK2+SALT)使用scrypt算法(与第二步中的SALT相同)产生出32 Bytes HASH 作为IK3；
-
-6.使用IK3前16 Bytes作为KEK(用来加密主密钥DEK的KEY)，后16 Bytes作为算法IV(初始化向量)；
-
-7.使用AES_CBC算法，采用KEK作为密钥，IV作为初始化向量来加密用户的主密钥DEK，生成加密后的主密钥， 存入分区尾部数据结构中；
-
 path: system/vold/cryptfs.c
 ```
 static int create_encrypted_random_key(
@@ -36,6 +16,7 @@ static int create_encrypted_random_key(
 
     /* Get some random bits for a key */
     fd = open("/dev/urandom", O_RDONLY);
+    // 产生随机16 Bytes DEK(disk encryption key--磁盘加密用的密钥)及16 Bytes SALT；
     read(fd, key_buf, sizeof(key_buf));
     read(fd, salt, SALT_LEN);
     close(fd);
@@ -67,6 +48,12 @@ static int encrypt_master_key(const char *passwd, const unsigned char *salt,
     case KDF_SCRYPT_KEYMASTER_UNPADDED:
     case KDF_SCRYPT_KEYMASTER_BADLY_PADDED:
     case KDF_SCRYPT_KEYMASTER:
+    // 1.将IK1填充到硬件产生的私钥规格大小(目前看到是RSA算法，256Bytes), 具体是:
+    // 00 || IK1 || 00..00 ## one zero byte, 32 IK1 bytes, 223 zero bytes.
+    //
+    // 2.使用硬件私钥 HBK 对 IK1 进行签名，生成256 Bytes签名数据作为IK2；
+    // 3.对(IK2+SALT)使用scrypt算法(与第二步中的SALT相同)产生出32 Bytes HASH 作为IK3；
+    // 4.使用IK3前16 Bytes作为KEK(用来加密主密钥DEK的KEY)，后16 Bytes作为算法IV(初始化向量)；
         if (keymaster_create_key(crypt_ftr)) {
             SLOGE("keymaster_create_key failed");
             return -1;
@@ -79,7 +66,7 @@ static int encrypt_master_key(const char *passwd, const unsigned char *salt,
         break;
 
     case KDF_SCRYPT:
-        // 用户密码及SALT采用了scrypt算法来生成加密密钥
+        // 对(用户密码+SALT)使用scrypt算法产生32 Bytes HASH 作为IK1(intermediate key 1);
         if (scrypt(passwd, salt, ikey, crypt_ftr)) {
             SLOGE("scrypt failed");
             return -1;
@@ -99,6 +86,7 @@ static int encrypt_master_key(const char *passwd, const unsigned char *salt,
     EVP_CIPHER_CTX_set_padding(&e_ctx, 0); /* Turn off padding as our data is block aligned */
 
     /* Encrypt the master key */
+    /* 加密master key */
     if (! EVP_EncryptUpdate(&e_ctx, encrypted_master_key, &encrypted_len,
                               decrypted_master_key, KEY_LEN_BYTES)) {
         SLOGE("EVP_EncryptUpdate failed\n");
@@ -123,6 +111,8 @@ static int encrypt_master_key(const char *passwd, const unsigned char *salt,
     int r = 1 << crypt_ftr->r_factor;
     int p = 1 << crypt_ftr->p_factor;
 
+    // 使用AES_CBC算法，采用KEK作为密钥，IV作为初始化向量来加密用户的主密钥DEK，
+    // 生成加密后的主密钥， 存入分区尾部数据结构中；
     rc = crypto_scrypt(ikey, KEY_LEN_BYTES,
                        crypt_ftr->salt, sizeof(crypt_ftr->salt), N, r, p,
                        crypt_ftr->scrypted_intermediate_key,

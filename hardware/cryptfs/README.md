@@ -459,7 +459,8 @@ real_blkdev=/dev/block/bootdevice/by-name/userdata
 #endif
 
         /* Make an encrypted master key */
-        // 3.光有password作为key还不够，我们还需要加入盐值，最终会在master_key里边得到一组密钥。
+        // 3.光有password作为key还不够，我们还需要加入盐值，最终会在master_key里边得到一组加密密钥
+        // 这组密钥就是用来加密data分区的密钥.
         if (create_encrypted_random_key(passwd, crypt_ftr.master_key, crypt_ftr.salt, &crypt_ftr)) {
             SLOGE("Cannot create encrypted master key\n");
             goto error_shutting_down;
@@ -479,6 +480,7 @@ real_blkdev=/dev/block/bootdevice/by-name/userdata
                persist_data = pdata;
            }
         }
+
         // 5.key信息是存储了两份，挨着的。当第一份被破坏的时候，还能从第二份那修复回来！
         if (persist_data) {
             save_persistent_data();
@@ -540,9 +542,9 @@ https://github.com/leeminghao/about-android/blob/master/hardware/cryptfs/create_
 
 #### 创建device mapper设备
 
-利用device-mapper机制创建一个device mapper设备，其实device mapper是一个驱动，
-叫md（mapped device之意）; 为这个device mapper设备设置一个crypt虚拟项。这
-个crypt虚拟项会和待加密设备（real_blkdev）关联起来.crypto_blkdev是上面device mapper
+利用device-mapper机制创建一个device mapper设备，其实device mapper是一个驱动，叫md(mapped device
+之意）; 为这个device mapper设备设置一个crypt虚拟项。这
+个crypt虚拟项会和待加密设备(real_blkdev)关联起来.crypto_blkdev是上面device mapper
 创建的一个虚拟项设备，命名方式为/dev/block/dm-xxx。xxx为device mapper的minor版本号。
 设备加解密工作就是在这个crypto_blkdev读写过程中完成的。以后我们挂载这个
 crypto_blkdev到/data分区就可以了。当从这个设备读的时候，它会从底层关联的
@@ -550,7 +552,9 @@ real_blkdev读取加密数据，然后解密传递给读者。当往这个设备
 再写到real_blkdev中
 
 ```
+    // 先解密出加密磁盘数据的master key
     decrypt_master_key(passwd, decrypted_master_key, &crypt_ftr, 0, 0);
+    // 创建dm
     create_crypto_blk_dev(&crypt_ftr, decrypted_master_key, real_blkdev, crypto_blkdev,
                           "userdata");
 
